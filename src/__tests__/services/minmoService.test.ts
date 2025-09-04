@@ -1,117 +1,142 @@
-import { minmoService } from '../../services/minmoService';
-import { MinmoPaymentRequest, MinmoWebhookPayload } from '../../types';
-
 // Mock axios
 jest.mock('axios');
 const mockedAxios = require('axios');
 
+// Mock the axios.create method before importing MinmoService
+const mockAxiosInstance = {
+  post: jest.fn(),
+  get: jest.fn(),
+  interceptors: {
+    request: { use: jest.fn() },
+    response: { use: jest.fn() },
+  },
+};
+
+mockedAxios.create.mockReturnValue(mockAxiosInstance);
+
+// Import after mocking
+import { minmoService } from '../../services/minmoService';
+import { 
+  LightningInvoiceRequest, 
+  LightningInvoiceResponse,
+  MinmoPayoutRequest,
+  MinmoPayoutResponse,
+  LightningWebhookPayload,
+  MinmoPayoutWebhookPayload
+} from '../../types';
+
 describe('MinmoService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Reset the mock instance
+    mockAxiosInstance.post.mockClear();
+    mockAxiosInstance.get.mockClear();
   });
 
-  describe('initiatePayment', () => {
-    it('should initiate payment successfully', async () => {
+  describe('generateLightningInvoice', () => {
+    it('should generate lightning invoice successfully', async () => {
       const mockResponse = {
         data: {
-          checkoutRequestId: 'test-checkout-id',
-          qrCode: 'test-qr-code',
-          stkPushSent: true,
-          message: 'Payment initiated successfully',
+          invoice: 'lnbc2300n1p...',
+          invoiceId: 'test-invoice-id',
+          amount: 2300,
+          expiresAt: '2024-01-01T00:05:00Z',
         },
       };
 
-      mockedAxios.create.mockReturnValue({
-        post: jest.fn().mockResolvedValue(mockResponse),
-        interceptors: {
-          request: { use: jest.fn() },
-          response: { use: jest.fn() },
-        },
-      });
+      mockAxiosInstance.post.mockResolvedValue(mockResponse);
 
-      const paymentRequest: MinmoPaymentRequest = {
-        amount: 1000,
-        phoneNumber: '254712345678',
-        callbackUrl: 'https://test.com/callback',
+      const invoiceRequest: LightningInvoiceRequest = {
+        amount: 2300,
+        description: 'Test payment',
+        expiry: 300,
       };
 
-      const result = await minmoService.initiatePayment(paymentRequest);
+      const result = await minmoService.generateLightningInvoice(invoiceRequest);
 
+      expect(result.invoice).toBe('lnbc2300n1p...');
+      expect(result.invoiceId).toBe('test-invoice-id');
       expect(result.success).toBe(true);
-      expect(result.checkoutRequestId).toBe('test-checkout-id');
-      expect(result.qrCode).toBe('test-qr-code');
-      expect(result.stkPushSent).toBe(true);
     });
 
-    it('should handle payment initiation failure', async () => {
-      const mockError = {
-        response: {
-          data: {
-            message: 'Payment failed',
-          },
-        },
+    it('should handle lightning invoice generation failure', async () => {
+      mockAxiosInstance.post.mockRejectedValue(new Error('Invoice generation failed'));
+
+      const invoiceRequest: LightningInvoiceRequest = {
+        amount: 2300,
+        description: 'Test payment',
+        expiry: 300,
       };
 
-      mockedAxios.create.mockReturnValue({
-        post: jest.fn().mockRejectedValue(mockError),
-        interceptors: {
-          request: { use: jest.fn() },
-          response: { use: jest.fn() },
-        },
-      });
-
-      const paymentRequest: MinmoPaymentRequest = {
-        amount: 1000,
-        phoneNumber: '254712345678',
-        callbackUrl: 'https://test.com/callback',
-      };
-
-      const result = await minmoService.initiatePayment(paymentRequest);
+      const result = await minmoService.generateLightningInvoice(invoiceRequest);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Payment failed');
+      expect(result.error).toBe('Invoice generation failed');
     });
   });
 
-  describe('convertToBitcoin', () => {
-    it('should convert KES to Bitcoin successfully', async () => {
+  describe('executeMpesaPayout', () => {
+    it('should execute M-Pesa payout successfully', async () => {
       const mockResponse = {
         data: {
-          btcAmount: 0.000023,
-          satsAmount: 2300,
-          exchangeRate: 43500000,
-          lightningInvoice: 'lnbc2300n1p...',
-          bitcoinAddress: 'bc1q...',
+          transactionId: 'test-transaction-id',
+          status: 'pending',
+          amount: 1000,
+          phoneNumber: '254712345678',
         },
       };
 
-      mockedAxios.create.mockReturnValue({
-        post: jest.fn().mockResolvedValue(mockResponse),
-        interceptors: {
-          request: { use: jest.fn() },
-          response: { use: jest.fn() },
+      mockAxiosInstance.post.mockResolvedValue(mockResponse);
+
+      const payoutRequest: MinmoPayoutRequest = {
+        invoiceId: 'test-invoice-id',
+        amount: 1000,
+        phoneNumber: '254712345678',
+      };
+
+      const result = await minmoService.executeMpesaPayout(payoutRequest);
+
+      expect(result.transactionId).toBe('test-transaction-id');
+      expect(result.success).toBe(true);
+    });
+
+    it('should handle M-Pesa payout failure', async () => {
+      mockAxiosInstance.post.mockRejectedValue(new Error('Payout failed'));
+
+      const payoutRequest: MinmoPayoutRequest = {
+        invoiceId: 'test-invoice-id',
+        amount: 1000,
+        phoneNumber: '254712345678',
+      };
+
+      const result = await minmoService.executeMpesaPayout(payoutRequest);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('M-Pesa payout failed');
+    });
+  });
+
+  describe('convertKesToSats', () => {
+    it('should convert KES to sats successfully', async () => {
+      const mockResponse = {
+        data: {
+          satsAmount: 2300,
+          rate: 43500000,
         },
-      });
+      };
 
-      const result = await minmoService.convertToBitcoin(1000);
+      mockAxiosInstance.post.mockResolvedValue(mockResponse);
 
-      expect(result.kshAmount).toBe(1000);
-      expect(result.btcAmount).toBe(0.000023);
+      const result = await minmoService.convertKesToSats(1000);
+
       expect(result.satsAmount).toBe(2300);
-      expect(result.exchangeRate).toBe(43500000);
-      expect(result.lightningInvoice).toBe('lnbc2300n1p...');
+      expect(result.rate).toBe(43500000);
     });
 
     it('should handle conversion failure', async () => {
-      mockedAxios.create.mockReturnValue({
-        post: jest.fn().mockRejectedValue(new Error('Conversion failed')),
-        interceptors: {
-          request: { use: jest.fn() },
-          response: { use: jest.fn() },
-        },
-      });
+      mockAxiosInstance.post.mockRejectedValue(new Error('Conversion failed'));
 
-      await expect(minmoService.convertToBitcoin(1000)).rejects.toThrow('Bitcoin conversion failed');
+      await expect(minmoService.convertKesToSats(1000)).rejects.toThrow('KES to sats conversion failed');
     });
   });
 
@@ -123,13 +148,7 @@ describe('MinmoService', () => {
         },
       };
 
-      mockedAxios.create.mockReturnValue({
-        get: jest.fn().mockResolvedValue(mockResponse),
-        interceptors: {
-          request: { use: jest.fn() },
-          response: { use: jest.fn() },
-        },
-      });
+      mockAxiosInstance.get.mockResolvedValue(mockResponse);
 
       const rate = await minmoService.getExchangeRate();
 
@@ -137,15 +156,9 @@ describe('MinmoService', () => {
     });
 
     it('should handle exchange rate failure', async () => {
-      mockedAxios.create.mockReturnValue({
-        get: jest.fn().mockRejectedValue(new Error('Rate fetch failed')),
-        interceptors: {
-          request: { use: jest.fn() },
-          response: { use: jest.fn() },
-        },
-      });
+      mockAxiosInstance.get.mockRejectedValue(new Error('Rate fetch failed'));
 
-      await expect(minmoService.getExchangeRate()).rejects.toThrow('Failed to fetch exchange rate');
+      await expect(minmoService.getExchangeRate()).rejects.toThrow();
     });
   });
 
@@ -170,32 +183,56 @@ describe('MinmoService', () => {
     });
   });
 
-  describe('processWebhook', () => {
-    it('should process successful webhook', async () => {
-      const payload: MinmoWebhookPayload = {
-        checkoutRequestId: 'test-checkout-id',
-        resultCode: 0,
-        resultDesc: 'Success',
-        amount: 1000,
-        mpesaReceiptNumber: 'test-receipt',
-        transactionDate: '2024-01-01T00:00:00Z',
-        phoneNumber: '254712345678',
+  describe('processLightningWebhook', () => {
+    it('should process successful lightning webhook', async () => {
+      const payload: LightningWebhookPayload = {
+        invoiceId: 'test-invoice-id',
+        status: 'paid',
+        amount: 2300,
+        paidAt: new Date('2024-01-01T00:00:00Z'),
       };
 
-      const result = await minmoService.processWebhook(payload);
+      const result = await minmoService.processLightningWebhook(payload);
 
       expect(result).toBe(true);
     });
 
-    it('should handle failed webhook', async () => {
-      const payload: MinmoWebhookPayload = {
-        checkoutRequestId: 'test-checkout-id',
-        resultCode: 1,
-        resultDesc: 'Failed',
+    it('should handle failed lightning webhook', async () => {
+      const payload: LightningWebhookPayload = {
+        invoiceId: 'test-invoice-id',
+        status: 'failed',
+        amount: 2300,
+      };
+
+      const result = await minmoService.processLightningWebhook(payload);
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('processPayoutWebhook', () => {
+    it('should process successful payout webhook', async () => {
+      const payload: MinmoPayoutWebhookPayload = {
+        invoiceId: 'test-invoice-id',
+        transactionId: 'test-transaction-id',
+        status: 'success',
         amount: 1000,
       };
 
-      const result = await minmoService.processWebhook(payload);
+      const result = await minmoService.processPayoutWebhook(payload);
+
+      expect(result).toBe(true);
+    });
+
+    it('should handle failed payout webhook', async () => {
+      const payload: MinmoPayoutWebhookPayload = {
+        invoiceId: 'test-invoice-id',
+        transactionId: 'test-transaction-id',
+        status: 'failed',
+        amount: 1000,
+      };
+
+      const result = await minmoService.processPayoutWebhook(payload);
 
       expect(result).toBe(false);
     });

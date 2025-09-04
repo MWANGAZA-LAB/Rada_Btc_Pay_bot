@@ -91,7 +91,7 @@ export function validatePaymentData(service: ServiceType, data: Partial<PaymentD
 
   const { error, value } = schema.validate(data);
   if (error) {
-    return { isValid: false, error: error.details[0].message };
+    return { isValid: false, error: error.details[0]?.message || 'Validation error' };
   }
 
   return { 

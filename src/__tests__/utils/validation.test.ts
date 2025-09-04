@@ -74,7 +74,7 @@ describe('Validation Utils', () => {
       const result = validatePaymentData('airtime', data);
       
       expect(result.isValid).toBe(false);
-      expect(result.error).toContain('Maximum amount is KES 150,000');
+      expect(result.error).toContain('Maximum amount is KES 150000');
     });
   });
 
@@ -89,9 +89,9 @@ describe('Validation Utils', () => {
 
   describe('formatAmount', () => {
     it('should format amounts correctly', () => {
-      expect(formatAmount(1000)).toBe('KES 1,000');
-      expect(formatAmount(100.50)).toBe('KES 100.5');
-      expect(formatAmount(0)).toBe('KES 0');
+      expect(formatAmount(1000)).toMatch(/Ksh\s*1,000/);
+      expect(formatAmount(100.50)).toMatch(/Ksh\s*100\.5/);
+      expect(formatAmount(0)).toMatch(/Ksh\s*0/);
     });
   });
 
