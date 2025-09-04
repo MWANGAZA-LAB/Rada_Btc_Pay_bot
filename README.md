@@ -1,17 +1,20 @@
 # 🚀 Rada Bot
 
-> Seamless Bitcoin payments via M-Pesa
+> Seamless Bitcoin to M-Pesa payments
 
-Rada Bot is a non-custodial tool that lets users pay with M-Pesa and instantly convert their payments to Bitcoin. Built for Kenya, powered by Bitcoin.
+Rada Bot is a non-custodial tool that lets users pay with Bitcoin and instantly convert their payments to M-Pesa transactions. Built for Kenya, powered by Bitcoin Lightning Network.
 
 ## ✨ Features
 
-- 📱 **Buy Airtime** - Top up your phone with Bitcoin rewards
-- 🏢 **Pay Bills** - Pay utility bills and earn Bitcoin
-- 🛒 **Buy Goods** - Purchase goods and receive Bitcoin
-- 💸 **Send Money** - Send money and get Bitcoin rewards
-- 💰 **Lipa na Pochi** - Use Pochi and earn Bitcoin
-- 📷 **Scan QR Codes** - Scan QR codes for Bitcoin payments
+- 📱 **Buy Airtime** - Pay with Bitcoin, top up any phone number
+- 🏢 **Pay Bills** - Pay utility bills using Bitcoin Lightning payments
+- 🛒 **Buy Goods** - Purchase goods and services with Bitcoin
+- 💸 **Send Money** - Send M-Pesa payments using Bitcoin
+- 💰 **Lipa na M-Pesa** - Use Bitcoin to make M-Pesa payments
+- ⚡ **Lightning Network** - Fast, low-cost Bitcoin transactions
+- 🔒 **Non-Custodial** - You control your Bitcoin, we never hold it
+- 💱 **Real-time Rates** - Live Bitcoin to KES exchange rates
+- 🔄 **Rate Locking** - Lock exchange rates during payment process
 
 ## 🏗 Architecture
 
@@ -19,14 +22,21 @@ Rada Bot is a non-custodial tool that lets users pay with M-Pesa and instantly c
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Telegram Bot  │    │  Rada Backend   │    │   Minmo API     │
 │                 │◄──►│                 │◄──►│                 │
-│  User Interface │    │  Orchestrator   │    │ Payment & BTC   │
+│  User Interface │    │  Orchestrator   │    │ Lightning & M-Pesa│
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                       │                       │
          │                       │                       │
          ▼                       ▼                       ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Web UI        │    │     Redis       │    │   M-Pesa API    │
-│  (GitHub Pages) │    │   (Sessions)    │    │                 │
+│  (GitHub Pages) │    │   (Sessions)    │    │   (STK Push)    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  Lightning      │    │  Rate Service   │    │  Webhook        │
+│  Wallets        │    │  (Real-time)    │    │  Handlers       │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
@@ -46,9 +56,10 @@ Rada Bot is a non-custodial tool that lets users pay with M-Pesa and instantly c
 - **Lucide React** - Icons
 
 ### Infrastructure
-- **Railway.app** / **Fly.io** - Bot deployment
+- **Render.com** / **Fly.io** / **Railway.app** - Bot deployment
 - **GitHub Pages** - Web UI deployment
 - **Docker** - Containerization
+- **Redis** - Session management (optional)
 
 ## 🚀 Quick Start
 
@@ -63,8 +74,8 @@ Rada Bot is a non-custodial tool that lets users pay with M-Pesa and instantly c
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/rada-bot/rada-bot.git
-   cd rada-bot
+   git clone https://github.com/MWANGAZA-LAB/Rada_Btc_Pay_bot.git
+   cd Rada_Btc_Pay_bot
    ```
 
 2. **Install dependencies**
@@ -74,7 +85,8 @@ Rada Bot is a non-custodial tool that lets users pay with M-Pesa and instantly c
 
 3. **Setup environment variables**
    ```bash
-   cp env.example .env
+   # Create .env file with your credentials
+   cp .env.example .env
    # Edit .env with your credentials
    ```
 
@@ -101,15 +113,39 @@ NODE_ENV=development
 
 # Redis (Optional)
 REDIS_URL=redis://localhost:6379
+
+# Rate Service
+RATE_POLLING_INTERVAL=30000
+RATE_LOCK_DURATION=120000
 ```
 
 ## 📱 Usage
 
 1. **Start the bot** on Telegram: [@RadaBot](https://t.me/RadaBot)
-2. **Choose a service** from the main menu
-3. **Enter payment details** (phone, amount, etc.)
-4. **Confirm payment** and complete via M-Pesa
-5. **Receive Bitcoin** instantly in your wallet
+2. **Choose a service** from the main menu (Airtime, Bills, Goods, Send Money, Lipa na M-Pesa)
+3. **Enter payment details** (phone number, amount in KES, etc.)
+4. **Confirm payment** and see the Bitcoin amount in satoshis
+5. **Pay with Lightning** using your Bitcoin wallet
+6. **M-Pesa payment** is automatically executed after Lightning payment
+
+## 💡 How It Works
+
+### Payment Flow
+1. **User selects service** (Airtime, Bills, etc.)
+2. **Enters details** (phone number, amount in KES)
+3. **Bot shows conversion** (KES amount → Bitcoin satoshis)
+4. **Rate is locked** for 2 minutes to prevent fluctuations
+5. **Lightning invoice** is generated via Minmo API
+6. **User pays** with their Lightning wallet
+7. **Webhook confirms** Lightning payment
+8. **M-Pesa payout** is automatically triggered
+9. **User receives** M-Pesa payment confirmation
+
+### Supported Lightning Wallets
+- **Phoenix Wallet** - Mobile Lightning wallet
+- **Breez Wallet** - Mobile Lightning wallet  
+- **Zeus Wallet** - Mobile Lightning wallet
+- **Any BOLT11 compatible wallet**
 
 ## 🧪 Testing
 
@@ -172,6 +208,12 @@ npm run preview     # Preview production build
 
 ### Bot Backend
 
+#### Render.com (Recommended)
+1. Connect your GitHub repository
+2. Set environment variables
+3. Deploy automatically on push
+4. Use the `render.yaml` configuration file
+
 #### Railway.app
 1. Connect your GitHub repository
 2. Set environment variables
@@ -204,7 +246,9 @@ The web UI is automatically deployed to GitHub Pages on every push to main.
 
 1. Sign up for Minmo API access
 2. Get your API key and webhook secret
-3. Configure webhook URL: `https://your-domain.com/api/minmo/callback`
+3. Configure webhook URLs:
+   - Lightning webhook: `https://your-domain.com/api/lightning/callback`
+   - M-Pesa payout webhook: `https://your-domain.com/api/minmo/payout-callback`
 
 ## 📊 API Endpoints
 
@@ -212,11 +256,13 @@ The web UI is automatically deployed to GitHub Pages on every push to main.
 - `POST /webhook` - Telegram bot webhook
 
 ### Minmo Integration
-- `POST /api/minmo/callback` - Minmo payment webhook
+- `POST /api/lightning/callback` - Lightning payment webhook
+- `POST /api/minmo/payout-callback` - M-Pesa payout webhook
 
 ### Public API
 - `GET /health` - Health check
-- `GET /api/exchange-rate` - Current exchange rate
+- `GET /api/exchange-rate` - Current Bitcoin to KES exchange rate
+- `GET /api/rate-status` - Rate service status
 
 ## 🤝 Contributing
 
@@ -232,9 +278,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🆘 Support
 
-- 📧 Email: support@radabot.com
+- 📧 Email: support@mwanga.com
 - 💬 Telegram: [@RadaBot](https://t.me/RadaBot)
-- 🐛 Issues: [GitHub Issues](https://github.com/rada-bot/rada-bot/issues)
+- 🐛 Issues: [GitHub Issues](https://github.com/MWANGAZA-LAB/Rada_Btc_Pay_bot/issues)
 
 ## 🙏 Acknowledgments
 
