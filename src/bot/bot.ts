@@ -1,10 +1,10 @@
-import { Bot, Context, InlineKeyboard } from 'grammy';
+import { Bot, Context } from 'grammy';
 import { config } from '../config';
 import { sessionManager } from '../services/sessionManager';
 import { minmoService } from '../services/minmoService';
 import { rateService } from '../services/rateService';
 import { validatePaymentData, formatPhoneNumber } from '../utils/validation';
-import { ServiceType, PaymentData, UserSession } from '../types';
+import { ServiceType, UserSession } from '../types';
 import { 
   mainMenuKeyboard, 
   cancelKeyboard, 
@@ -131,8 +131,7 @@ export class RadaBot {
 
     // Lightning invoice callbacks
     this.bot.callbackQuery(/^copy_invoice_(.+)$/, async (ctx) => {
-      const invoicePrefix = ctx.match[1];
-      await this.handleCopyInvoice(ctx, invoicePrefix);
+      await this.handleCopyInvoice(ctx);
     });
   }
 
@@ -241,7 +240,7 @@ export class RadaBot {
 
   private async processTextInput(ctx: Context, session: UserSession, text: string): Promise<void> {
     const service = session.currentService!;
-    let paymentData = session.paymentData || { service, amount: 0 };
+    const paymentData = session.paymentData || { service, amount: 0 };
 
     switch (service) {
       case 'airtime':
@@ -447,7 +446,7 @@ export class RadaBot {
     }
   }
 
-  private async handleCopyInvoice(ctx: Context, invoicePrefix: string): Promise<void> {
+  private async handleCopyInvoice(ctx: Context): Promise<void> {
     try {
       const session = ctx.session as UserSession;
       

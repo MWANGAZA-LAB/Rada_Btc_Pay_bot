@@ -97,7 +97,7 @@ export interface BitcoinConversion {
 export interface BotCommand {
   command: string;
   description: string;
-  handler: (ctx: any) => Promise<void>;
+  handler: () => Promise<void>;
 }
 
 export interface ServiceConfig {

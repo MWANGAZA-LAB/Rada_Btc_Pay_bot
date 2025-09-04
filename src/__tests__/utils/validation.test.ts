@@ -4,7 +4,6 @@ import {
   formatAmount, 
   formatSats 
 } from '../../utils/validation';
-import { ServiceType } from '../../types';
 
 describe('Validation Utils', () => {
   describe('validatePaymentData', () => {

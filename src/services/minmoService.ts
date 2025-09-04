@@ -6,8 +6,7 @@ import {
   MinmoPayoutRequest, 
   MinmoPayoutResponse,
   LightningWebhookPayload,
-  MinmoPayoutWebhookPayload,
-  BitcoinConversion 
+  MinmoPayoutWebhookPayload
 } from '../types';
 import logger from '../utils/logger';
 

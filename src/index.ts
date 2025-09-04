@@ -1,6 +1,5 @@
 import Server from './server';
 import logger from './utils/logger';
-import { config } from './config';
 
 async function main(): Promise<void> {
   try {

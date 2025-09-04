@@ -1,4 +1,4 @@
-import { InlineKeyboard, Keyboard } from 'grammy';
+import { InlineKeyboard } from 'grammy';
 import { ServiceType } from '../types';
 
 export const mainMenuKeyboard = new InlineKeyboard([

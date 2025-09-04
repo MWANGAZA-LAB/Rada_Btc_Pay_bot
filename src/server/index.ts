@@ -110,7 +110,7 @@ class Server {
     });
 
     // Error handler
-    this.app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    this.app.use((error: any, req: express.Request, res: express.Response) => {
       logger.error('Unhandled error:', error);
       res.status(500).json({ error: 'Internal server error' });
     });
