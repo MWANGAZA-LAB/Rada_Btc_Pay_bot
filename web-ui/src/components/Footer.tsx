@@ -13,11 +13,11 @@ const Footer: React.FC = () => {
               </div>
               <div>
                 <h3 className="text-xl font-bold">Rada Bot</h3>
-                <p className="text-gray-400 text-sm">Bitcoin via M-Pesa</p>
+                <p className="text-gray-400 text-sm">Pay Bitcoin, Get M-Pesa</p>
               </div>
             </div>
             <p className="text-gray-400 mb-6 max-w-md">
-              Seamlessly convert your M-Pesa payments to Bitcoin with just a few taps. 
+              Use your Bitcoin Lightning wallet to pay for M-Pesa services instantly. 
               Built for Kenya, powered by Bitcoin.
             </p>
             <a
