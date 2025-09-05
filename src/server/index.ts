@@ -5,7 +5,7 @@ import { config } from '../config';
 import { RadaBot } from '../bot/bot';
 import { sessionManager } from '../services/sessionManager';
 import { minmoService } from '../services/minmoService';
-import { LightningWebhookPayload, MinmoPayoutWebhookPayload } from '../types';
+import { LightningWebhookPayload, MinmoPayoutWebhookPayload, MinmoPayoutRequest } from '../types';
 import { messages } from '../bot/messages';
 import logger from '../utils/logger';
 
@@ -216,15 +216,27 @@ class Server {
       }
 
       // Execute M-Pesa payout
-      const payoutRequest = {
+      const payoutRequest: MinmoPayoutRequest = {
         amount: session.paymentData.amount,
-        phoneNumber: session.paymentData.phoneNumber,
-        paybillNumber: session.paymentData.paybillNumber,
-        accountNumber: session.paymentData.accountNumber,
-        tillNumber: session.paymentData.tillNumber,
-        qrData: session.paymentData.qrData,
         invoiceId: payload.invoiceId,
       };
+
+      // Add optional fields only if they exist
+      if (session.paymentData.phoneNumber) {
+        payoutRequest.phoneNumber = session.paymentData.phoneNumber;
+      }
+      if (session.paymentData.paybillNumber) {
+        payoutRequest.paybillNumber = session.paymentData.paybillNumber;
+      }
+      if (session.paymentData.accountNumber) {
+        payoutRequest.accountNumber = session.paymentData.accountNumber;
+      }
+      if (session.paymentData.tillNumber) {
+        payoutRequest.tillNumber = session.paymentData.tillNumber;
+      }
+      if (session.paymentData.qrData) {
+        payoutRequest.qrData = session.paymentData.qrData;
+      }
 
       const payoutResponse = await minmoService.executeMpesaPayout(payoutRequest);
 

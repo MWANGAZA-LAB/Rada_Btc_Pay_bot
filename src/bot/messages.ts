@@ -270,17 +270,19 @@ export function getConfirmationMessage(service: ServiceType, data: any, satsAmou
   if (typeof confirmation === 'function') {
     switch (service) {
       case 'airtime':
+        return (confirmation as any)(data.phoneNumber!, data.amount, satsAmount, rate);
       case 'send_money':
+        return (confirmation as any)(data.phoneNumber!, data.amount, satsAmount, rate);
       case 'pochi':
-        return confirmation(data.phoneNumber, data.amount, satsAmount, rate);
+        return (confirmation as any)(data.phoneNumber!, data.amount, satsAmount, rate);
       case 'paybill':
-        return confirmation(data.paybillNumber, data.accountNumber, data.amount, satsAmount, rate);
+        return (confirmation as any)(data.paybillNumber!, data.accountNumber!, data.amount, satsAmount, rate);
       case 'goods':
-        return confirmation(data.tillNumber, data.amount, satsAmount, rate);
+        return (confirmation as any)(data.tillNumber!, data.amount, satsAmount, rate);
       case 'qr_scan':
-        return confirmation(data.amount, satsAmount, rate);
+        return (confirmation as any)(data.amount, satsAmount, rate);
       default:
-        return confirmation(data.amount, satsAmount, rate);
+        return (confirmation as any)(data.amount, satsAmount, rate);
     }
   }
   return confirmation;

@@ -5,6 +5,7 @@ import { minmoService } from '../services/minmoService';
 import { rateService } from '../services/rateService';
 import { validatePaymentData, formatPhoneNumber } from '../utils/validation';
 import { ServiceType, UserSession } from '../types';
+import { RadaContext } from './types';
 import { 
   mainMenuKeyboard, 
   cancelKeyboard, 
@@ -17,10 +18,10 @@ import { messages, getServiceMessage, getInputPrompt, getConfirmationMessage } f
 import logger from '../utils/logger';
 
 export class RadaBot {
-  private bot: Bot;
+  private bot: Bot<RadaContext>;
 
   constructor() {
-    this.bot = new Bot(config.telegram.token);
+    this.bot = new Bot<RadaContext>(config.telegram.token);
     this.setupMiddleware();
     this.setupCommands();
     this.setupCallbacks();
@@ -29,7 +30,7 @@ export class RadaBot {
 
   private setupMiddleware(): void {
     // Session middleware
-    this.bot.use(async (ctx, next) => {
+    this.bot.use(async (ctx: RadaContext, next) => {
       const userId = ctx.from?.id;
       if (!userId) return;
 
@@ -50,104 +51,106 @@ export class RadaBot {
 
   private setupCommands(): void {
     // Start command
-    this.bot.command('start', async (ctx) => {
+    this.bot.command('start', async (ctx: RadaContext) => {
       await this.handleStart(ctx);
     });
 
     // Help command
-    this.bot.command('help', async (ctx) => {
+    this.bot.command('help', async (ctx: RadaContext) => {
       await this.handleHelp(ctx);
     });
 
     // Menu command
-    this.bot.command('menu', async (ctx) => {
+    this.bot.command('menu', async (ctx: RadaContext) => {
       await this.showMainMenu(ctx);
     });
 
     // Cancel command
-    this.bot.command('cancel', async (ctx) => {
+    this.bot.command('cancel', async (ctx: RadaContext) => {
       await this.handleCancel(ctx);
     });
   }
 
   private setupCallbacks(): void {
     // Main menu callbacks
-    this.bot.callbackQuery('main_menu', async (ctx) => {
+    this.bot.callbackQuery('main_menu', async (ctx: RadaContext) => {
       await this.showMainMenu(ctx);
     });
 
     // Service selection callbacks
-    this.bot.callbackQuery(/^service_(.+)$/, async (ctx) => {
-      const service = ctx.match[1] as ServiceType;
-      await this.handleServiceSelection(ctx, service);
+    this.bot.callbackQuery(/^service_(.+)$/, async (ctx: RadaContext) => {
+      const service = ctx.match?.[1] as ServiceType;
+      if (service) {
+        await this.handleServiceSelection(ctx, service);
+      }
     });
 
     // Input callbacks
-    this.bot.callbackQuery('input_phone', async (ctx) => {
+    this.bot.callbackQuery('input_phone', async (ctx: RadaContext) => {
       await this.handleInputRequest(ctx, 'phone');
     });
 
-    this.bot.callbackQuery('input_paybill', async (ctx) => {
+    this.bot.callbackQuery('input_paybill', async (ctx: RadaContext) => {
       await this.handleInputRequest(ctx, 'paybill');
     });
 
-    this.bot.callbackQuery('input_account', async (ctx) => {
+    this.bot.callbackQuery('input_account', async (ctx: RadaContext) => {
       await this.handleInputRequest(ctx, 'account');
     });
 
-    this.bot.callbackQuery('input_till', async (ctx) => {
+    this.bot.callbackQuery('input_till', async (ctx: RadaContext) => {
       await this.handleInputRequest(ctx, 'till');
     });
 
-    this.bot.callbackQuery('input_amount', async (ctx) => {
+    this.bot.callbackQuery('input_amount', async (ctx: RadaContext) => {
       await this.handleInputRequest(ctx, 'amount');
     });
 
-    this.bot.callbackQuery('upload_qr', async (ctx) => {
+    this.bot.callbackQuery('upload_qr', async (ctx: RadaContext) => {
       await this.handleInputRequest(ctx, 'qr');
     });
 
     // Confirmation callbacks
-    this.bot.callbackQuery('confirm_payment', async (ctx) => {
+    this.bot.callbackQuery('confirm_payment', async (ctx: RadaContext) => {
       await this.handlePaymentConfirmation(ctx);
     });
 
-    this.bot.callbackQuery('cancel', async (ctx) => {
+    this.bot.callbackQuery('cancel', async (ctx: RadaContext) => {
       await this.handleCancel(ctx);
     });
 
     // Help and exchange rate callbacks
-    this.bot.callbackQuery('help', async (ctx) => {
+    this.bot.callbackQuery('help', async (ctx: RadaContext) => {
       await this.handleHelp(ctx);
     });
 
-    this.bot.callbackQuery('exchange_rate', async (ctx) => {
+    this.bot.callbackQuery('exchange_rate', async (ctx: RadaContext) => {
       await this.handleExchangeRate(ctx);
     });
 
-    this.bot.callbackQuery('refresh_rate', async (ctx) => {
+    this.bot.callbackQuery('refresh_rate', async (ctx: RadaContext) => {
       await this.handleRefreshRate(ctx);
     });
 
     // Lightning invoice callbacks
-    this.bot.callbackQuery(/^copy_invoice_(.+)$/, async (ctx) => {
+    this.bot.callbackQuery(/^copy_invoice_(.+)$/, async (ctx: RadaContext) => {
       await this.handleCopyInvoice(ctx);
     });
   }
 
   private setupMessageHandlers(): void {
     // Handle text messages for input collection
-    this.bot.on('message:text', async (ctx) => {
+    this.bot.on('message:text', async (ctx: RadaContext) => {
       await this.handleTextInput(ctx);
     });
 
     // Handle photo messages for QR code uploads
-    this.bot.on('message:photo', async (ctx) => {
+    this.bot.on('message:photo', async (ctx: RadaContext) => {
       await this.handlePhotoUpload(ctx);
     });
   }
 
-  private async handleStart(ctx: Context): Promise<void> {
+  private async handleStart(ctx: RadaContext): Promise<void> {
     try {
       await ctx.reply(messages.welcome, {
         parse_mode: 'Markdown',
@@ -159,7 +162,7 @@ export class RadaBot {
     }
   }
 
-  private async handleHelp(ctx: Context): Promise<void> {
+  private async handleHelp(ctx: RadaContext): Promise<void> {
     try {
       await ctx.reply(messages.help, {
         parse_mode: 'Markdown',
@@ -171,12 +174,9 @@ export class RadaBot {
     }
   }
 
-  private async showMainMenu(ctx: Context): Promise<void> {
+  private async showMainMenu(ctx: RadaContext): Promise<void> {
     try {
-      await sessionManager.updateSession(ctx.from!.id, { 
-        currentService: undefined, 
-        paymentData: undefined 
-      });
+      await sessionManager.updateSession(ctx.from!.id, {});
 
       await ctx.editMessageText(messages.welcome, {
         parse_mode: 'Markdown',
@@ -190,7 +190,7 @@ export class RadaBot {
     }
   }
 
-  private async handleServiceSelection(ctx: Context, service: ServiceType): Promise<void> {
+  private async handleServiceSelection(ctx: RadaContext, service: ServiceType): Promise<void> {
     try {
       await sessionManager.updateSession(ctx.from!.id, { currentService: service });
 
@@ -207,7 +207,7 @@ export class RadaBot {
     }
   }
 
-  private async handleInputRequest(ctx: Context, inputType: string): Promise<void> {
+  private async handleInputRequest(ctx: RadaContext, inputType: string): Promise<void> {
     try {
       const prompt = getInputPrompt(inputType);
       await ctx.editMessageText(prompt, {
@@ -220,7 +220,7 @@ export class RadaBot {
     }
   }
 
-  private async handleTextInput(ctx: Context): Promise<void> {
+  private async handleTextInput(ctx: RadaContext): Promise<void> {
     try {
       const session = ctx.session as UserSession;
       const text = ctx.message?.text?.trim();
@@ -238,7 +238,7 @@ export class RadaBot {
     }
   }
 
-  private async processTextInput(ctx: Context, session: UserSession, text: string): Promise<void> {
+  private async processTextInput(ctx: RadaContext, session: UserSession, text: string): Promise<void> {
     const service = session.currentService!;
     const paymentData = session.paymentData || { service, amount: 0 };
 
@@ -291,7 +291,7 @@ export class RadaBot {
     }
   }
 
-  private async processAmountInput(ctx: Context, session: UserSession, text: string): Promise<void> {
+  private async processAmountInput(ctx: RadaContext, session: UserSession, text: string): Promise<void> {
     const amount = parseFloat(text);
     if (isNaN(amount) || amount < 10 || amount > 150000) {
       await ctx.reply(messages.errors.invalidAmount);
@@ -324,7 +324,7 @@ export class RadaBot {
     }
   }
 
-  private async handlePhotoUpload(ctx: Context): Promise<void> {
+  private async handlePhotoUpload(ctx: RadaContext): Promise<void> {
     try {
       const session = ctx.session as UserSession;
       
@@ -344,7 +344,7 @@ export class RadaBot {
     }
   }
 
-  private async handlePaymentConfirmation(ctx: Context): Promise<void> {
+  private async handlePaymentConfirmation(ctx: RadaContext): Promise<void> {
     try {
       const session = ctx.session as UserSession;
       const paymentData = session.paymentData;
@@ -398,7 +398,7 @@ export class RadaBot {
     }
   }
 
-  private async handleExchangeRate(ctx: Context): Promise<void> {
+  private async handleExchangeRate(ctx: RadaContext): Promise<void> {
     try {
       const rateStatus = rateService.getRateStatus();
       const rateDisplay = rateService.getRateDisplay();
@@ -416,7 +416,7 @@ export class RadaBot {
     }
   }
 
-  private async handleRefreshRate(ctx: Context): Promise<void> {
+  private async handleRefreshRate(ctx: RadaContext): Promise<void> {
     try {
       const session = ctx.session as UserSession;
       
@@ -446,7 +446,7 @@ export class RadaBot {
     }
   }
 
-  private async handleCopyInvoice(ctx: Context): Promise<void> {
+  private async handleCopyInvoice(ctx: RadaContext): Promise<void> {
     try {
       const session = ctx.session as UserSession;
       
@@ -469,7 +469,7 @@ export class RadaBot {
     }
   }
 
-  private async handleCancel(ctx: Context): Promise<void> {
+  private async handleCancel(ctx: RadaContext): Promise<void> {
     try {
       await sessionManager.clearSession(ctx.from!.id);
       await this.showMainMenu(ctx);
@@ -498,7 +498,7 @@ export class RadaBot {
     }
   }
 
-  public getBot(): Bot {
+  public getBot(): Bot<RadaContext> {
     return this.bot;
   }
 }
