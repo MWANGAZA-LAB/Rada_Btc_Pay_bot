@@ -105,5 +105,5 @@ export interface ServiceConfig {
   description: string;
   icon: string;
   requiredFields: string[];
-  validationRules: Record<string, any>;
+  validationRules: Record<string, unknown>;
 }

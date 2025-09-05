@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import { Server as HttpServer } from 'http';
 import { config } from '../config';
 import { RadaBot } from '../bot/bot';
 import { sessionManager } from '../services/sessionManager';
@@ -12,7 +13,7 @@ import logger from '../utils/logger';
 class Server {
   private app: express.Application;
   private bot: RadaBot;
-  private server: any;
+  private server: HttpServer | null = null;
 
   constructor() {
     this.app = express();
@@ -110,7 +111,7 @@ class Server {
     });
 
     // Error handler
-    this.app.use((error: any, req: express.Request, res: express.Response) => {
+    this.app.use((error: Error, req: express.Request, res: express.Response) => {
       logger.error('Unhandled error:', error);
       res.status(500).json({ error: 'Internal server error' });
     });

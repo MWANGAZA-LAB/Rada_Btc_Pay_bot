@@ -265,24 +265,32 @@ export function getInputPrompt(field: string): string {
   return messages.inputPrompts[field as keyof typeof messages.inputPrompts] || 'Please enter the required information:';
 }
 
-export function getConfirmationMessage(service: ServiceType, data: any, satsAmount: number, rate: string): string {
+interface PaymentData {
+  phoneNumber?: string;
+  paybillNumber?: string;
+  accountNumber?: string;
+  tillNumber?: string;
+  amount: number;
+}
+
+export function getConfirmationMessage(service: ServiceType, data: PaymentData, satsAmount: number, rate: string): string {
   const confirmation = messages.confirmations[service];
   if (typeof confirmation === 'function') {
     switch (service) {
       case 'airtime':
-        return (confirmation as any)(data.phoneNumber!, data.amount, satsAmount, rate);
+        return (confirmation as (phone: string, amount: number, satsAmount: number, rate: string) => string)(data.phoneNumber!, data.amount, satsAmount, rate);
       case 'send_money':
-        return (confirmation as any)(data.phoneNumber!, data.amount, satsAmount, rate);
+        return (confirmation as (phone: string, amount: number, satsAmount: number, rate: string) => string)(data.phoneNumber!, data.amount, satsAmount, rate);
       case 'pochi':
-        return (confirmation as any)(data.phoneNumber!, data.amount, satsAmount, rate);
+        return (confirmation as (phone: string, amount: number, satsAmount: number, rate: string) => string)(data.phoneNumber!, data.amount, satsAmount, rate);
       case 'paybill':
-        return (confirmation as any)(data.paybillNumber!, data.accountNumber!, data.amount, satsAmount, rate);
+        return (confirmation as (paybill: string, account: string, amount: number, satsAmount: number, rate: string) => string)(data.paybillNumber!, data.accountNumber!, data.amount, satsAmount, rate);
       case 'goods':
-        return (confirmation as any)(data.tillNumber!, data.amount, satsAmount, rate);
+        return (confirmation as (till: string, amount: number, satsAmount: number, rate: string) => string)(data.tillNumber!, data.amount, satsAmount, rate);
       case 'qr_scan':
-        return (confirmation as any)(data.amount, satsAmount, rate);
+        return (confirmation as (amount: number, satsAmount: number, rate: string) => string)(data.amount, satsAmount, rate);
       default:
-        return (confirmation as any)(data.amount, satsAmount, rate);
+        return (confirmation as (amount: number, satsAmount: number, rate: string) => string)(data.amount, satsAmount, rate);
     }
   }
   return confirmation;

@@ -71,14 +71,14 @@ class MinmoService {
         invoiceId: response.data.invoiceId,
         expiresAt: new Date(response.data.expiresAt),
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Failed to generate Lightning invoice:', error);
       return {
         success: false,
         invoice: '',
         invoiceId: '',
         expiresAt: new Date(),
-        error: error.response?.data?.message || 'Invoice generation failed',
+        error: (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Invoice generation failed',
       };
     }
   }
@@ -95,12 +95,12 @@ class MinmoService {
         transactionId: response.data.transactionId,
         message: response.data.message,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Failed to execute M-Pesa payout:', error);
       return {
         success: false,
         transactionId: '',
-        error: error.response?.data?.message || 'M-Pesa payout failed',
+        error: (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'M-Pesa payout failed',
       };
     }
   }
@@ -117,7 +117,7 @@ class MinmoService {
         satsAmount: response.data.satsAmount,
         rate: response.data.rate,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Failed to convert KES to sats:', error);
       throw new Error('KES to sats conversion failed');
     }
@@ -127,13 +127,13 @@ class MinmoService {
     try {
       const response = await this.api.get('/exchange/rate/KES/BTC');
       return response.data.rate;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Failed to get exchange rate:', error);
       throw new Error('Failed to fetch exchange rate');
     }
   }
 
-  async verifyWebhook(payload: any, signature: string): Promise<boolean> {
+  async verifyWebhook(payload: unknown, signature: string): Promise<boolean> {
     try {
       // Implement webhook signature verification
       // This would typically involve HMAC verification

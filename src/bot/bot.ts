@@ -1,4 +1,4 @@
-import { Bot, Context } from 'grammy';
+import { Bot } from 'grammy';
 import { config } from '../config';
 import { sessionManager } from '../services/sessionManager';
 import { minmoService } from '../services/minmoService';
