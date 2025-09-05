@@ -210,10 +210,19 @@ export class RadaBot {
   private async handleInputRequest(ctx: RadaContext, inputType: string): Promise<void> {
     try {
       const prompt = getInputPrompt(inputType);
-      await ctx.editMessageText(prompt, {
-        parse_mode: 'Markdown',
-        reply_markup: cancelKeyboard,
-      });
+      // Try to edit message first, fallback to reply if editing fails
+      try {
+        await ctx.editMessageText(prompt, {
+          parse_mode: 'Markdown',
+          reply_markup: cancelKeyboard,
+        });
+      } catch (editError) {
+        // If editing fails, send a new message instead
+        await ctx.reply(prompt, {
+          parse_mode: 'Markdown',
+          reply_markup: cancelKeyboard,
+        });
+      }
     } catch (error) {
       logger.error('Error in handleInputRequest:', error);
       await ctx.reply(messages.errors.invalidInput);

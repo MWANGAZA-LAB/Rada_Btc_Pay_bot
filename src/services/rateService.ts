@@ -124,6 +124,9 @@ class RateService {
   }
 
   public getRateDisplay(): string {
+    if (this.currentRate === 0) {
+      return `💱 Rate: Loading...\n💸 Please wait while we fetch the current exchange rate.`;
+    }
     const satsPerKes = this.convertKesToSats(1);
     return `💱 Rate: 1 BTC = ${this.currentRate.toLocaleString()} KES\n💸 1 KES = ${satsPerKes} sats`;
   }
