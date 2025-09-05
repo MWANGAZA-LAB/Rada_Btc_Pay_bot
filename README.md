@@ -183,66 +183,6 @@ npm run build       # Build for production
 npm run preview     # Preview production build
 ```
 
-## 🚀 Deployment
-
-### Bot Backend
-
-#### Render.com (Recommended)
-1. Connect your GitHub repository
-2. Set environment variables
-3. Deploy automatically on push
-4. Use the `render.yaml` configuration file
-
-#### Railway.app
-1. Connect your GitHub repository
-2. Set environment variables
-3. Deploy automatically on push
-
-#### Fly.io
-```bash
-fly deploy
-```
-
-#### Docker
-```bash
-docker build -t rada-bot .
-docker run -p 3000:3000 --env-file .env rada-bot
-```
-
-### Web UI
-
-The web UI is automatically deployed to GitHub Pages on every push to main.
-
-## 🔧 Configuration
-
-### Telegram Bot Setup
-
-1. Create a bot with [@BotFather](https://t.me/BotFather)
-2. Get your bot token
-3. Set webhook URL: `https://your-domain.com/webhook`
-
-### Minmo API Integration
-
-1. Sign up for Minmo API access
-2. Get your API key and webhook secret
-3. Configure webhook URLs:
-   - Lightning webhook: `https://your-domain.com/api/lightning/callback`
-   - M-Pesa payout webhook: `https://your-domain.com/api/minmo/payout-callback`
-
-## 📊 API Endpoints
-
-### Bot Webhook
-- `POST /webhook` - Telegram bot webhook
-
-### Minmo Integration
-- `POST /api/lightning/callback` - Lightning payment webhook
-- `POST /api/minmo/payout-callback` - M-Pesa payout webhook
-
-### Public API
-- `GET /health` - Health check
-- `GET /api/exchange-rate` - Current Bitcoin to KES exchange rate
-- `GET /api/rate-status` - Rate service status
-
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -257,14 +197,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🆘 Support
 
-- 📧 Email: support@mwanga.com
+- 📧 Email: radakenya254@gmail.com
 - 💬 Telegram: [@Rada_Btc_Pay_bot](https://t.me/Rada_Btc_Pay_bot)
 - 🐛 Issues: [GitHub Issues](https://github.com/MWANGAZA-LAB/Rada_Btc_Pay_bot/issues)
 
 ## 🙏 Acknowledgments
 
-- [grammY](https://grammy.dev/) - Amazing Telegram Bot Framework
-- [Minmo](https://minmo.com/) - M-Pesa and Bitcoin integration
+- [Minmo](https://minmo.to/) - M-Pesa and Bitcoin integration
 - [TailwindCSS](https://tailwindcss.com/) - Utility-first CSS framework
 - [Vite](https://vitejs.dev/) - Next generation frontend tooling
 
