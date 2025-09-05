@@ -64,13 +64,16 @@ class Server {
     // Health check endpoint
     this.app.get('/health', (req, res) => {
       try {
+        logger.info('Health check requested');
         res.json({ 
           status: 'healthy', 
           timestamp: new Date().toISOString(),
           service: 'rada-bot',
           uptime: process.uptime(),
-          environment: config.server.nodeEnv
+          environment: config.server.nodeEnv,
+          port: config.server.port
         });
+        logger.info('Health check response sent');
       } catch (error) {
         logger.error('Health check error:', error);
         res.status(500).json({ 
@@ -358,6 +361,8 @@ class Server {
 
   public async start(): Promise<void> {
     try {
+      logger.info('Starting server initialization...');
+      
       // Initialize services (Redis is optional)
       try {
         await sessionManager.initialize();
@@ -367,9 +372,10 @@ class Server {
         logger.warn('Continuing without Redis - sessions will not persist across restarts');
       }
       
-      // Start the server
+      // Start the server first - this is critical for health checks
+      logger.info(`Attempting to start server on port ${config.server.port}`);
       this.server = this.app.listen(config.server.port, '0.0.0.0', () => {
-        logger.info(`Server running on port ${config.server.port}`);
+        logger.info(`✅ Server running on port ${config.server.port}`);
         logger.info(`Environment: ${config.server.nodeEnv}`);
         logger.info('Health check endpoint available at /health');
         logger.info('Server is ready to accept connections');
@@ -381,21 +387,24 @@ class Server {
       });
 
       this.server.on('listening', () => {
-        logger.info('Server is now listening for connections');
+        logger.info('✅ Server is now listening for connections');
       });
+
+      // Wait a moment for server to start
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Start the bot (make it optional for health checks)
       try {
         await this.bot.start();
-        logger.info('Telegram bot started successfully');
+        logger.info('✅ Telegram bot started successfully');
       } catch (error) {
         logger.warn('Telegram bot failed to start:', error);
         logger.warn('Server will continue running for health checks');
       }
       
-      logger.info('Rada Bot server started successfully');
+      logger.info('✅ Rada Bot server started successfully');
     } catch (error) {
-      logger.error('Failed to start server:', error);
+      logger.error('❌ Failed to start server:', error);
       throw error;
     }
   }
