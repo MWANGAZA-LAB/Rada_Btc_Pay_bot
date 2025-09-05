@@ -51,7 +51,8 @@ const requiredEnvVars = [
 
 // Only validate in production or when explicitly required
 // Skip validation for Railway deployment to allow health checks to work
-if ((process.env.NODE_ENV === 'production' || process.env.VALIDATE_ENV === 'true') && !process.env.RAILWAY_ENVIRONMENT) {
+const isRailway = process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID || process.env.RAILWAY_SERVICE_ID;
+if ((process.env.NODE_ENV === 'production' || process.env.VALIDATE_ENV === 'true') && !isRailway) {
   for (const envVar of requiredEnvVars) {
     if (!process.env[envVar]) {
       throw new Error(`Missing required environment variable: ${envVar}`);

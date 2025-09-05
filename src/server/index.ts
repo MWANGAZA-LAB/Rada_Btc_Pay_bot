@@ -47,7 +47,17 @@ class Server {
       res.json({ 
         message: 'Rada Bot API is running',
         timestamp: new Date().toISOString(),
-        service: 'rada-bot'
+        service: 'rada-bot',
+        status: 'ok'
+      });
+    });
+
+    // Simple test endpoint
+    this.app.get('/test', (req, res) => {
+      res.json({ 
+        message: 'Test endpoint working',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
       });
     });
 
@@ -362,6 +372,16 @@ class Server {
         logger.info(`Server running on port ${config.server.port}`);
         logger.info(`Environment: ${config.server.nodeEnv}`);
         logger.info('Health check endpoint available at /health');
+        logger.info('Server is ready to accept connections');
+      });
+
+      // Add error handling for the server
+      this.server.on('error', (error) => {
+        logger.error('Server error:', error);
+      });
+
+      this.server.on('listening', () => {
+        logger.info('Server is now listening for connections');
       });
 
       // Start the bot (make it optional for health checks)
