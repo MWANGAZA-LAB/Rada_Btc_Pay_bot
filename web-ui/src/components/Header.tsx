@@ -36,7 +36,7 @@ const Header: React.FC = () => {
           
           <div className="flex items-center space-x-4">
             <a
-              href="https://t.me/RadaBot"
+              href="https://t.me/Rada_Btc_Pay_bot"
               target="_blank"
               rel="noopener noreferrer"
               className="btn-primary"

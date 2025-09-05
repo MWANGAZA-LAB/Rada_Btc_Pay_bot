@@ -21,7 +21,7 @@ const Hero: React.FC = () => {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
               <a
-                href="https://t.me/RadaBot"
+                href="https://t.me/Rada_Btc_Pay_bot"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-primary text-lg px-8 py-4 flex items-center space-x-2 group"

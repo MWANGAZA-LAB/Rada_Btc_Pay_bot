@@ -21,7 +21,7 @@ const Footer: React.FC = () => {
               Built for Kenya, powered by Bitcoin.
             </p>
             <a
-              href="https://t.me/RadaBot"
+              href="https://t.me/Rada_Btc_Pay_bot"
               target="_blank"
               rel="noopener noreferrer"
               className="btn-primary inline-flex items-center space-x-2"
