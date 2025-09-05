@@ -18,9 +18,7 @@ mockedAxios.create.mockReturnValue(mockAxiosInstance);
 import { minmoService } from '../../services/minmoService';
 import { 
   LightningInvoiceRequest, 
-  LightningInvoiceResponse,
   MinmoPayoutRequest,
-  MinmoPayoutResponse,
   LightningWebhookPayload,
   MinmoPayoutWebhookPayload
 } from '../../types';
