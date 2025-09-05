@@ -1,4 +1,4 @@
-import { Bot } from 'grammy';
+import { Bot, InlineKeyboard } from 'grammy';
 import { config } from '../config';
 import { sessionManager } from '../services/sessionManager';
 import { minmoService } from '../services/minmoService';
@@ -386,7 +386,7 @@ export class RadaBot {
 
   private async handlePhotoUpload(ctx: RadaContext): Promise<void> {
     try {
-      const session = sessionManager.getSession(ctx.from!.id);
+      const session = await sessionManager.getSession(ctx.from!.id);
       
       if (!session || !session.qrScanMode) {
         await ctx.reply('Please use the "📷 Scan QR" button first to activate QR scanning mode.');
@@ -401,8 +401,12 @@ export class RadaBot {
 
       // Get the largest photo
       const largestPhoto = photo[photo.length - 1];
+      if (!largestPhoto) {
+        await ctx.reply('No valid photo found. Please try again.');
+        return;
+      }
       const file = await ctx.api.getFile(largestPhoto.file_id);
-      const fileUrl = `https://api.telegram.org/file/bot${config.telegram.botToken}/${file.file_path}`;
+      const fileUrl = `https://api.telegram.org/file/bot${config.telegram.token}/${file.file_path}`;
 
       // Download and process the image
       const response = await fetch(fileUrl);
@@ -420,7 +424,7 @@ export class RadaBot {
       await this.handleQRResult(ctx, qrResult, session.originalInvoice);
 
       // Clear QR scan mode
-      sessionManager.updateSession(ctx.from!.id, { qrScanMode: false, originalInvoice: undefined });
+      sessionManager.updateSession(ctx.from!.id, { qrScanMode: false });
       
     } catch (error) {
       logger.error('Error processing photo upload:', error);
@@ -467,7 +471,9 @@ export class RadaBot {
         });
 
         const invoiceMessage = messages.lightningInvoice(satsAmount, invoiceResponse.invoice);
-        const keyboard = await walletDetectionService.generateWalletKeyboard(invoiceResponse.invoice);
+        const keyboard = new InlineKeyboard()
+          .text('📋 Copy', `copy_invoice:${invoiceResponse.invoice}`)
+          .text('📷 Scan QR', `scan_qr:${invoiceResponse.invoice}`);
 
         await ctx.reply(invoiceMessage, {
           parse_mode: 'Markdown',
@@ -546,13 +552,12 @@ export class RadaBot {
   private async handleQRScan(ctx: RadaContext, invoice: string): Promise<void> {
     try {
       await ctx.answerCallbackQuery('QR Scanner activated');
+      const keyboard = new InlineKeyboard()
+        .text('❌ Cancel', 'cancel_qr_scan');
+      
       await ctx.reply(messages.qrScanPrompt, {
         parse_mode: 'Markdown',
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: '❌ Cancel', callback_data: 'cancel_qr_scan' }]
-          ]
-        }
+        reply_markup: keyboard
       });
       
       // Store the original invoice in session for comparison
@@ -570,8 +575,7 @@ export class RadaBot {
     try {
       await ctx.answerCallbackQuery('QR scan cancelled');
       sessionManager.updateSession(ctx.from!.id, { 
-        qrScanMode: false, 
-        originalInvoice: undefined 
+        qrScanMode: false
       });
       await ctx.reply('QR scan cancelled. You can use the copy option or tap a wallet button instead.');
     } catch (error) {
@@ -585,7 +589,7 @@ export class RadaBot {
       await ctx.answerCallbackQuery('Invoice selected');
       
       // Generate new wallet keyboard with the scanned invoice
-      const keyboard = await walletDetectionService.generateWalletKeyboard(invoice);
+      const keyboard = new InlineKeyboard().text('📋 Copy', `copy_invoice:${invoice}`);
       
       await ctx.reply(`✅ *Using Scanned Invoice*\n\n\`${invoice}\`\n\n*Choose your payment method:*`, {
         parse_mode: 'Markdown',
@@ -597,33 +601,33 @@ export class RadaBot {
     }
   }
 
-  private async handleQRResult(ctx: RadaContext, qrResult: { type?: string; parsedData?: Record<string, unknown>; data?: string }, originalInvoice?: string): Promise<void> {
+  private async handleQRResult(ctx: RadaContext, qrResult: { type?: string; parsedData?: any; data?: string }, originalInvoice?: string): Promise<void> {
     try {
       const { type, parsedData, data } = qrResult;
 
       switch (type) {
         case 'lightning':
-          await this.handleLightningQR(ctx, parsedData?.lightningInvoice || data);
+          await this.handleLightningQR(ctx, parsedData?.lightningInvoice || data || '');
           break;
         
         case 'mpesa_merchant':
-          await this.handleMpesaMerchantQR(ctx, parsedData);
+          await this.handleMpesaMerchantQR(ctx, parsedData || {});
           break;
         
         case 'phone_number':
-          await this.handlePhoneNumberQR(ctx, parsedData);
+          await this.handlePhoneNumberQR(ctx, parsedData || {});
           break;
         
         case 'custom_payment':
-          await this.handleCustomPaymentQR(ctx, parsedData);
+          await this.handleCustomPaymentQR(ctx, parsedData || {});
           break;
         
         case 'bitcoin':
-          await this.handleBitcoinQR(ctx, parsedData?.bitcoinAddress || data);
+          await this.handleBitcoinQR(ctx, parsedData?.bitcoinAddress || data || '');
           break;
         
         default:
-          await this.handleUnknownQR(ctx, data, originalInvoice);
+          await this.handleUnknownQR(ctx, data || '', originalInvoice);
       }
     } catch (error) {
       logger.error('Error handling QR result:', error);
@@ -651,12 +655,10 @@ export class RadaBot {
     }
 
     const message = messages.qrMpesaMerchant(data);
-    const keyboard = {
-      inline_keyboard: [
-        [{ text: '✅ Create Lightning Invoice', callback_data: `create_mpesa_invoice:${JSON.stringify(data)}` }],
-        [{ text: '🔄 Scan Another', callback_data: `scan_qr:` }]
-      ]
-    };
+    const keyboard = new InlineKeyboard()
+      .text('✅ Create Lightning Invoice', `create_mpesa_invoice:${JSON.stringify(data)}`)
+      .row()
+      .text('🔄 Scan Another', 'scan_qr:');
 
     await ctx.reply(message, {
       parse_mode: 'Markdown',
@@ -665,18 +667,16 @@ export class RadaBot {
   }
 
   private async handlePhoneNumberQR(ctx: RadaContext, data: Record<string, unknown>): Promise<void> {
-    if (!qrCodeService.validatePhoneNumber(data.phoneNumber)) {
+    if (!qrCodeService.validatePhoneNumber(data.phoneNumber as string)) {
       await ctx.reply('❌ *Invalid Phone Number*\n\nThis QR code does not contain a valid Kenyan phone number.');
       return;
     }
 
-    const message = messages.qrPhoneNumber(data.phoneNumber);
-    const keyboard = {
-      inline_keyboard: [
-        [{ text: '✅ Enter Amount', callback_data: `enter_amount:${data.phoneNumber}` }],
-        [{ text: '🔄 Scan Another', callback_data: `scan_qr:` }]
-      ]
-    };
+    const message = messages.qrPhoneNumber(data.phoneNumber as string);
+    const keyboard = new InlineKeyboard()
+      .text('✅ Enter Amount', `enter_amount:${data.phoneNumber}`)
+      .row()
+      .text('🔄 Scan Another', 'scan_qr:');
 
     await ctx.reply(message, {
       parse_mode: 'Markdown',
@@ -686,12 +686,10 @@ export class RadaBot {
 
   private async handleCustomPaymentQR(ctx: RadaContext, data: Record<string, unknown>): Promise<void> {
     const message = messages.qrCustomPayment(data);
-    const keyboard = {
-      inline_keyboard: [
-        [{ text: '✅ Create Lightning Invoice', callback_data: `create_custom_invoice:${JSON.stringify(data)}` }],
-        [{ text: '🔄 Scan Another', callback_data: `scan_qr:` }]
-      ]
-    };
+    const keyboard = new InlineKeyboard()
+      .text('✅ Create Lightning Invoice', `create_custom_invoice:${JSON.stringify(data)}`)
+      .row()
+      .text('🔄 Scan Another', 'scan_qr:');
 
     await ctx.reply(message, {
       parse_mode: 'Markdown',
@@ -700,24 +698,22 @@ export class RadaBot {
   }
 
   private async handleBitcoinQR(ctx: RadaContext, address: string): Promise<void> {
+    const keyboard = new InlineKeyboard()
+      .text('🔄 Scan Another', 'scan_qr:');
+    
     await ctx.reply(`₿ *Bitcoin Address Detected*\n\n*Address:* \`${address}\`\n\n*Note:* This is a Bitcoin address, not a Lightning invoice. For Lightning payments, please scan a Lightning invoice QR code.`, {
       parse_mode: 'Markdown',
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: '🔄 Scan Another', callback_data: `scan_qr:` }]
-        ]
-      }
+      reply_markup: keyboard
     });
   }
 
   private async handleUnknownQR(ctx: RadaContext, data: string, originalInvoice?: string): Promise<void> {
+    const keyboard = new InlineKeyboard()
+      .text('🔄 Scan Another', `scan_qr:${originalInvoice || ''}`);
+    
     await ctx.reply(`❓ *Unknown QR Code Type*\n\n*Data:* \`${data}\`\n\n*Type:* Unknown\n\nThis QR code could not be identified as a payment-related code. Please scan a Lightning invoice, M-Pesa merchant QR, or phone number QR.`, {
       parse_mode: 'Markdown',
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: '🔄 Scan Another', callback_data: `scan_qr:${originalInvoice || ''}` }]
-        ]
-      }
+      reply_markup: keyboard
     });
   }
 
@@ -828,7 +824,8 @@ export class RadaBot {
 
       // Show confirmation and wallet options
       const confirmationMessage = messages.qrConfirmationPrompt(type, { amount });
-      const keyboard = await walletDetectionService.generateWalletKeyboard(invoiceResponse.invoice);
+      const keyboardData = await walletDetectionService.generateWalletKeyboard(invoiceResponse.invoice);
+      const keyboard = new InlineKeyboard().text('📋 Copy', `copy_invoice:${invoiceResponse.invoice}`);
       
       await ctx.reply(confirmationMessage, {
         parse_mode: 'Markdown',

@@ -1,4 +1,4 @@
-import { QrCodeParser } from 'qrcode-parser';
+import qrcodeParser from 'qrcode-parser';
 import logger from '../utils/logger';
 
 export interface QRCodeResult {
@@ -10,24 +10,22 @@ export interface QRCodeResult {
 }
 
 export interface ParsedQRData {
-  merchantName?: string;
-  paybillNumber?: string;
-  tillNumber?: string;
-  accountNumber?: string;
-  phoneNumber?: string;
-  amount?: number;
-  currency?: string;
-  reference?: string;
-  lightningInvoice?: string;
-  bitcoinAddress?: string;
-  customData?: Record<string, unknown>;
+  merchantName?: string | undefined;
+  paybillNumber?: string | undefined;
+  tillNumber?: string | undefined;
+  accountNumber?: string | undefined;
+  phoneNumber?: string | undefined;
+  amount?: number | undefined;
+  currency?: string | undefined;
+  reference?: string | undefined;
+  lightningInvoice?: string | undefined;
+  bitcoinAddress?: string | undefined;
+  customData?: Record<string, unknown> | undefined;
 }
 
 class QRCodeService {
-  private parser: QrCodeParser;
-
   constructor() {
-    this.parser = new QrCodeParser();
+    // No need to instantiate qrcode-parser as it's a function
   }
 
   /**
@@ -35,16 +33,16 @@ class QRCodeService {
    */
   async parseQRCodeFromFile(filePath: string): Promise<QRCodeResult> {
     try {
-      const result = await this.parser.parse(filePath);
+      const result = await qrcodeParser(filePath);
       
-      if (!result || !result.data) {
+      if (!result) {
         return {
           success: false,
           error: 'No QR code data found in image'
         };
       }
 
-      return this.processQRData(result.data);
+      return this.processQRData(result);
     } catch (error) {
       logger.error('Error parsing QR code from file:', error);
       return {
@@ -59,16 +57,18 @@ class QRCodeService {
    */
   async parseQRCodeFromBuffer(buffer: Buffer): Promise<QRCodeResult> {
     try {
-      const result = await this.parser.parse(buffer);
+      // Create a File from the buffer for qrcode-parser
+      const file = new File([buffer], 'qr-code.png', { type: 'image/png' });
+      const result = await qrcodeParser(file);
       
-      if (!result || !result.data) {
+      if (!result) {
         return {
           success: false,
           error: 'No QR code data found in image'
         };
       }
 
-      return this.processQRData(result.data);
+      return this.processQRData(result);
     } catch (error) {
       logger.error('Error parsing QR code from buffer:', error);
       return {
@@ -205,11 +205,11 @@ class QRCodeService {
       return data;
     }
 
-    // Lightning URI format: lightning:lnbc...
-    const lightningMatch = data.match(/^lightning:(lnbc|lntb|lnbcrt)[0-9]+[munp][0-9a-z]+$/i);
-    if (lightningMatch) {
-      return lightningMatch[1] + data.substring(lightningMatch[0].length - lightningMatch[1].length);
-    }
+          // Lightning URI format: lightning:lnbc...
+      const lightningMatch = data.match(/^lightning:(lnbc|lntb|lnbcrt)[0-9]+[munp][0-9a-z]+$/i);
+      if (lightningMatch && lightningMatch[1]) {
+        return lightningMatch[1] + data.substring(lightningMatch[0].length - lightningMatch[1].length);
+      }
 
     // Extract from any text that contains a Lightning invoice
     const invoiceMatch = data.match(/(lnbc|lntb|lnbcrt)[0-9]+[munp][0-9a-z]+/i);
@@ -241,17 +241,17 @@ class QRCodeService {
       if (mpesaMatch) {
         const [, type, number, amount, reference] = mpesaMatch;
         
-        if (type.toUpperCase() === 'TILL') {
+        if (type && type.toUpperCase() === 'TILL') {
           return {
             tillNumber: number,
-            accountNumber: reference,
+            accountNumber: reference || undefined,
             amount: amount ? parseFloat(amount) : undefined,
             currency: 'KES'
           };
-        } else if (type.toUpperCase() === 'PAYBILL' || /^\d+$/.test(type)) {
+        } else if (type && (type.toUpperCase() === 'PAYBILL' || /^\d+$/.test(type))) {
           return {
             paybillNumber: number,
-            accountNumber: reference,
+            accountNumber: reference || undefined,
             amount: amount ? parseFloat(amount) : undefined,
             currency: 'KES'
           };
@@ -265,7 +265,7 @@ class QRCodeService {
         return {
           paybillNumber: paybill,
           accountNumber: account,
-          reference: reference,
+          reference: reference || undefined,
           amount: amount ? parseFloat(amount) : undefined,
           currency: 'KES'
         };
@@ -358,7 +358,7 @@ class QRCodeService {
    */
   private extractBitcoinAddressFromURI(uri: string): string {
     const match = uri.match(/^bitcoin:([^?]+)/);
-    return match ? match[1] : uri;
+    return match ? match[1] || uri : uri;
   }
 
   /**

@@ -301,12 +301,13 @@ Please send a photo of the QR code you want to scan.
 
   qrConfirmationPrompt: (type: string, data: Record<string, unknown>) => {
     const rateStatus = rateService.getRateStatus();
-    const satsAmount = rateService.convertKesToSats(data.amount || 0);
+    const amount = typeof data.amount === 'number' ? data.amount : 0;
+    const satsAmount = rateService.convertKesToSats(amount);
     
     return `✅ *Confirm Payment*
 
 *Type:* ${type}
-*Amount:* KES ${(data.amount || 0).toLocaleString()}
+*Amount:* KES ${amount.toLocaleString()}
 *Bitcoin Cost:* ${formatSats(satsAmount)}
 *Rate:* 1 BTC = ${rateStatus.rate.toLocaleString()} KES
 

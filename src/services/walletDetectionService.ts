@@ -101,7 +101,7 @@ class WalletDetectionService {
       // Test each wallet's URL scheme
       for (const wallet of this.knownWallets) {
         try {
-          const isInstalled = await this.testWalletInstallation(wallet.scheme);
+          const isInstalled = await this.testWalletInstallation();
           if (isInstalled) {
             detectedWallets.push({
               ...wallet,
