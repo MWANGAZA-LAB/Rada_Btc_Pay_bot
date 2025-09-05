@@ -3,7 +3,6 @@ import { config } from '../config';
 import { sessionManager } from '../services/sessionManager';
 import { minmoService } from '../services/minmoService';
 import { rateService } from '../services/rateService';
-import { walletDetectionService } from '../services/walletDetectionService';
 import { qrCodeService } from '../services/qrCodeService';
 import { validatePaymentData, formatPhoneNumber } from '../utils/validation';
 import { ServiceType, UserSession } from '../types';
@@ -601,7 +600,7 @@ export class RadaBot {
     }
   }
 
-  private async handleQRResult(ctx: RadaContext, qrResult: { type?: string; parsedData?: any; data?: string }, originalInvoice?: string): Promise<void> {
+  private async handleQRResult(ctx: RadaContext, qrResult: { type?: string; parsedData?: Record<string, unknown>; data?: string }, originalInvoice?: string): Promise<void> {
     try {
       const { type, parsedData, data } = qrResult;
 
@@ -824,7 +823,6 @@ export class RadaBot {
 
       // Show confirmation and wallet options
       const confirmationMessage = messages.qrConfirmationPrompt(type, { amount });
-      const keyboardData = await walletDetectionService.generateWalletKeyboard(invoiceResponse.invoice);
       const keyboard = new InlineKeyboard().text('📋 Copy', `copy_invoice:${invoiceResponse.invoice}`);
       
       await ctx.reply(confirmationMessage, {
