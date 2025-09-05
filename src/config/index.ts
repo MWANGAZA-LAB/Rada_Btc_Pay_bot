@@ -12,7 +12,7 @@ export const config = {
   // Minmo API
   minmo: {
     apiKey: process.env.MINMO_API_KEY!,
-    apiUrl: process.env.MINMO_API_URL || 'https://api.minmo.com/v1',
+    apiUrl: process.env.MINMO_API_URL || 'https://api.dev.minmo.to',
     webhookSecret: process.env.MINMO_WEBHOOK_SECRET!,
   },
 
@@ -49,8 +49,11 @@ const requiredEnvVars = [
   'MINMO_WEBHOOK_SECRET',
 ];
 
-for (const envVar of requiredEnvVars) {
-  if (!process.env[envVar]) {
-    throw new Error(`Missing required environment variable: ${envVar}`);
+// Only validate in production or when explicitly required
+if (process.env.NODE_ENV === 'production' || process.env.VALIDATE_ENV === 'true') {
+  for (const envVar of requiredEnvVars) {
+    if (!process.env[envVar]) {
+      throw new Error(`Missing required environment variable: ${envVar}`);
+    }
   }
 }

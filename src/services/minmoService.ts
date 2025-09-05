@@ -10,22 +10,53 @@ import {
 } from '../types';
 import logger from '../utils/logger';
 
+interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+interface LoginResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  refresh_token?: string;
+}
+
 class MinmoService {
   private api: AxiosInstance;
+  private authApi: AxiosInstance;
+  private accessToken: string | null = null;
+  private tokenExpiry: Date | null = null;
 
   constructor() {
+    // API instance for authenticated requests
     this.api = axios.create({
       baseURL: config.minmo.apiUrl,
       headers: {
-        'Authorization': `Bearer ${config.minmo.apiKey}`,
         'Content-Type': 'application/json',
       },
       timeout: 30000,
     });
 
-    // Add request/response interceptors for logging
+    // Separate instance for authentication requests
+    this.authApi = axios.create({
+      baseURL: config.minmo.apiUrl,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      timeout: 30000,
+    });
+
+    // Add request interceptor to include auth token
     this.api.interceptors.request.use(
-      (config) => {
+      async (config) => {
+        // Ensure we have a valid token before making requests
+        await this.ensureAuthenticated();
+        
+        if (this.accessToken) {
+          config.headers.Authorization = `Bearer ${this.accessToken}`;
+        }
+        
         logger.debug('Minmo API Request:', {
           method: config.method,
           url: config.url,
@@ -39,6 +70,7 @@ class MinmoService {
       }
     );
 
+    // Add response interceptors for logging
     this.api.interceptors.response.use(
       (response) => {
         logger.debug('Minmo API Response:', {
@@ -56,11 +88,63 @@ class MinmoService {
         return Promise.reject(error);
       }
     );
+
+    this.authApi.interceptors.response.use(
+      (response) => {
+        logger.debug('Minmo Auth API Response:', {
+          status: response.status,
+          data: response.data,
+        });
+        return response;
+      },
+      (error) => {
+        logger.error('Minmo Auth API Response Error:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message,
+        });
+        return Promise.reject(error);
+      }
+    );
+  }
+
+  /**
+   * Authenticate with Minmo API using email and password
+   */
+  private async authenticate(): Promise<void> {
+    try {
+      // For now, we'll use the API key as a password and a default email
+      // In production, you should have proper credentials
+      const loginRequest: LoginRequest = {
+        email: process.env.MINMO_EMAIL || 'bot@minmo.com',
+        password: config.minmo.apiKey, // Using API key as password for now
+      };
+
+      const response = await this.authApi.post<LoginResponse>('/api/v1/auth/login', loginRequest);
+      
+      this.accessToken = response.data.access_token;
+      this.tokenExpiry = new Date(Date.now() + (response.data.expires_in * 1000));
+      
+      logger.info('Successfully authenticated with Minmo API');
+    } catch (error: unknown) {
+      logger.error('Failed to authenticate with Minmo API:', error);
+      throw new Error('Authentication failed');
+    }
+  }
+
+  /**
+   * Ensure we have a valid authentication token
+   */
+  private async ensureAuthenticated(): Promise<void> {
+    if (!this.accessToken || !this.tokenExpiry || new Date() >= this.tokenExpiry) {
+      await this.authenticate();
+    }
   }
 
   async generateLightningInvoice(invoiceRequest: LightningInvoiceRequest): Promise<LightningInvoiceResponse> {
     try {
-      const response = await this.api.post('/lightning/invoice', {
+      // Try the new API endpoint first
+      const response = await this.api.post('/api/v1/lightning/invoices', {
         ...invoiceRequest,
         callbackUrl: `${config.telegram.webhookUrl}/api/lightning/callback`,
       });
@@ -72,20 +156,39 @@ class MinmoService {
         expiresAt: new Date(response.data.expiresAt),
       };
     } catch (error: unknown) {
-      logger.error('Failed to generate Lightning invoice:', error);
-      return {
-        success: false,
-        invoice: '',
-        invoiceId: '',
-        expiresAt: new Date(),
-        error: (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Invoice generation failed',
-      };
+      logger.error('Failed to generate Lightning invoice with new API:', error);
+      
+      // Fallback to old endpoint if new API is not available
+      try {
+        logger.info('Attempting fallback to legacy Lightning invoice endpoint');
+        const fallbackResponse = await this.api.post('/lightning/invoice', {
+          ...invoiceRequest,
+          callbackUrl: `${config.telegram.webhookUrl}/api/lightning/callback`,
+        });
+
+        return {
+          success: true,
+          invoice: fallbackResponse.data.invoice,
+          invoiceId: fallbackResponse.data.invoiceId,
+          expiresAt: new Date(fallbackResponse.data.expiresAt),
+        };
+      } catch (fallbackError: unknown) {
+        logger.error('Fallback Lightning invoice generation also failed:', fallbackError);
+        return {
+          success: false,
+          invoice: '',
+          invoiceId: '',
+          expiresAt: new Date(),
+          error: 'Lightning invoice generation failed - API endpoints not available',
+        };
+      }
     }
   }
 
   async executeMpesaPayout(payoutRequest: MinmoPayoutRequest): Promise<MinmoPayoutResponse> {
     try {
-      const response = await this.api.post('/payouts/mpesa', {
+      // Try the new API endpoint first
+      const response = await this.api.post('/api/v1/mpesa/payouts', {
         ...payoutRequest,
         callbackUrl: `${config.telegram.webhookUrl}/api/minmo/payout-callback`,
       });
@@ -96,18 +199,35 @@ class MinmoService {
         message: response.data.message,
       };
     } catch (error: unknown) {
-      logger.error('Failed to execute M-Pesa payout:', error);
-      return {
-        success: false,
-        transactionId: '',
-        error: (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'M-Pesa payout failed',
-      };
+      logger.error('Failed to execute M-Pesa payout with new API:', error);
+      
+      // Fallback to old endpoint if new API is not available
+      try {
+        logger.info('Attempting fallback to legacy M-Pesa payout endpoint');
+        const fallbackResponse = await this.api.post('/payouts/mpesa', {
+          ...payoutRequest,
+          callbackUrl: `${config.telegram.webhookUrl}/api/minmo/payout-callback`,
+        });
+
+        return {
+          success: true,
+          transactionId: fallbackResponse.data.transactionId,
+          message: fallbackResponse.data.message,
+        };
+      } catch (fallbackError: unknown) {
+        logger.error('Fallback M-Pesa payout also failed:', fallbackError);
+        return {
+          success: false,
+          transactionId: '',
+          error: 'M-Pesa payout failed - API endpoints not available',
+        };
+      }
     }
   }
 
   async convertKesToSats(kshAmount: number): Promise<{ satsAmount: number; rate: number }> {
     try {
-      const response = await this.api.post('/exchange/convert', {
+      const response = await this.api.post('/api/v1/exchange/convert', {
         amount: kshAmount,
         from: 'KES',
         to: 'SATS',
@@ -125,13 +245,23 @@ class MinmoService {
 
   async getExchangeRate(): Promise<number> {
     try {
-      const response = await this.api.get('/exchange/rate/KES/BTC');
+      // Try the new API endpoint first
+      const response = await this.api.get('/api/v1/exchange/rates/KES/BTC');
       return response.data.rate;
     } catch (error: unknown) {
-      logger.error('Failed to get exchange rate from Minmo API:', error);
-      // Return a fallback rate when API is unavailable
-      logger.info('Using fallback exchange rate: 43,500,000 KES per BTC');
-      return 43500000; // Fallback rate: ~$1 = 150 KES, 1 BTC = $65,000
+      logger.error('Failed to get exchange rate from new Minmo API:', error);
+      
+      // Fallback to old endpoint if new API is not available
+      try {
+        logger.info('Attempting fallback to legacy exchange rate endpoint');
+        const fallbackResponse = await this.api.get('/exchange/rate/KES/BTC');
+        return fallbackResponse.data.rate;
+      } catch (fallbackError: unknown) {
+        logger.error('Fallback exchange rate endpoint also failed:', fallbackError);
+        // Return a fallback rate when API is unavailable
+        logger.info('Using fallback exchange rate: 43,500,000 KES per BTC');
+        return 43500000; // Fallback rate: ~$1 = 150 KES, 1 BTC = $65,000
+      }
     }
   }
 

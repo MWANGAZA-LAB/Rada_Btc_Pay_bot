@@ -5,6 +5,15 @@ async function main(): Promise<void> {
   try {
     logger.info('Starting Rada Bot...');
     
+    // Check for required environment variables
+    const requiredEnvVars = ['TELEGRAM_BOT_TOKEN', 'MINMO_API_KEY', 'MINMO_WEBHOOK_SECRET'];
+    const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+    
+    if (missingVars.length > 0) {
+      logger.warn(`Missing environment variables: ${missingVars.join(', ')}`);
+      logger.warn('Bot will start but may not function properly without these variables');
+    }
+    
     const server = new Server();
     await server.start();
     
