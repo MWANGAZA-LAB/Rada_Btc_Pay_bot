@@ -230,13 +230,13 @@ ${rate}
 
 Please try again or contact support if the issue persists.`,
 
-  exchangeRate: (rate: number, satsPerKes: number) =>
+  exchangeRate: (rate: number, satsPerKes: number, isFallback: boolean = false) =>
     `📊 *Current Exchange Rate*
 
 *1 KES = ${satsPerKes} sats*
-*1 BTC = ${formatAmount(rate)} KES*
+*1 BTC = ${formatAmount(rate)} KES*${isFallback ? ' (Fallback Rate)' : ''}
 
-*Last updated:* ${new Date().toLocaleString('en-KE')}`,
+*Last updated:* ${new Date().toLocaleString('en-KE')}${isFallback ? '\n\n⚠️ *Note:* Using fallback rate due to API unavailability' : ''}`,
 
   errors: {
     invalidInput: '❌ Invalid input. Please try again.',

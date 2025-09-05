@@ -37,6 +37,13 @@ class RateService {
       logger.debug('Exchange rate updated:', { rate, timestamp: this.lastUpdated });
     } catch (error) {
       logger.error('Failed to fetch exchange rate:', error);
+      
+      // If we don't have a rate yet, set a fallback rate
+      if (this.currentRate === 0) {
+        this.currentRate = 43500000; // Fallback rate
+        this.lastUpdated = new Date();
+        logger.info('Using fallback exchange rate due to API failure');
+      }
     }
   }
 
@@ -128,7 +135,10 @@ class RateService {
       return `💱 Rate: Loading...\n💸 Please wait while we fetch the current exchange rate.`;
     }
     const satsPerKes = this.convertKesToSats(1);
-    return `💱 Rate: 1 BTC = ${this.currentRate.toLocaleString()} KES\n💸 1 KES = ${satsPerKes} sats`;
+    const isFallbackRate = this.currentRate === 43500000;
+    const rateStatus = isFallbackRate ? ' (Fallback Rate)' : '';
+    
+    return `💱 Rate: 1 BTC = ${this.currentRate.toLocaleString()} KES${rateStatus}\n💸 1 KES = ${satsPerKes} sats`;
   }
 
   public getRateStatus(): {
@@ -136,15 +146,18 @@ class RateService {
     satsPerKes: number;
     lastUpdated: Date;
     isStale: boolean;
+    isFallback: boolean;
   } {
     const satsPerKes = this.convertKesToSats(1);
     const isStale = Date.now() - this.lastUpdated.getTime() > this.updateInterval * 2;
+    const isFallback = this.currentRate === 43500000;
     
     return {
       rate: this.currentRate,
       satsPerKes,
       lastUpdated: this.lastUpdated,
       isStale,
+      isFallback,
     };
   }
 }

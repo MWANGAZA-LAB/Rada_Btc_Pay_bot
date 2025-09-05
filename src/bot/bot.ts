@@ -410,15 +410,16 @@ export class RadaBot {
   private async handleExchangeRate(ctx: RadaContext): Promise<void> {
     try {
       const rateStatus = rateService.getRateStatus();
-      const rateDisplay = rateService.getRateDisplay();
-
-      await ctx.editMessageText(
-        `📊 *Current Exchange Rate*\n\n${rateDisplay}\n\n*Last updated:* ${rateStatus.lastUpdated.toLocaleString('en-KE')}`,
-        {
-          parse_mode: 'Markdown',
-          reply_markup: backToMenuKeyboard,
-        }
+      const rateMessage = messages.exchangeRate(
+        rateStatus.rate,
+        rateStatus.satsPerKes,
+        rateStatus.isFallback
       );
+
+      await ctx.editMessageText(rateMessage, {
+        parse_mode: 'Markdown',
+        reply_markup: backToMenuKeyboard,
+      });
     } catch (error) {
       logger.error('Error in handleExchangeRate:', error);
       await ctx.reply('Unable to fetch exchange rate. Please try again later.');
