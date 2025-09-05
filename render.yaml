@@ -1,10 +1,11 @@
 services:
   - type: web
     name: rada-bot
-    env: node
+    runtime: node
     plan: free
-    buildCommand: npm install && npm run build
+    buildCommand: npm ci --frozen-lockfile && npm run build
     startCommand: npm start
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
@@ -14,7 +15,13 @@ services:
         sync: false
       - key: MINMO_API_KEY
         sync: false
+      - key: MINMO_EMAIL
+        value: bot@minmo.com
+      - key: MINMO_API_URL
+        value: https://api.dev.minmo.to
       - key: MINMO_WEBHOOK_SECRET
         sync: false
       - key: TELEGRAM_WEBHOOK_URL
         sync: false
+      - key: LOG_LEVEL
+        value: info
