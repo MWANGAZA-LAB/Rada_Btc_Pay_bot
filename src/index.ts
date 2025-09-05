@@ -4,6 +4,8 @@ import logger from './utils/logger';
 async function main(): Promise<void> {
   try {
     logger.info('Starting Rada Bot...');
+    logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    logger.info(`Port: ${process.env.PORT || '3000'}`);
     
     // Check for required environment variables
     const requiredEnvVars = ['TELEGRAM_BOT_TOKEN', 'MINMO_API_KEY', 'MINMO_WEBHOOK_SECRET'];
