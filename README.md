@@ -95,33 +95,9 @@ Rada Bot is a non-custodial tool that lets users pay with Bitcoin and instantly 
    npm run dev
    ```
 
-### Environment Variables
-
-```env
-# Telegram Bot
-TELEGRAM_BOT_TOKEN=your_bot_token_here
-TELEGRAM_WEBHOOK_URL=https://your-domain.com/webhook
-
-# Minmo API
-MINMO_API_KEY=your_minmo_api_key
-MINMO_API_URL=https://api.minmo.com/v1
-MINMO_WEBHOOK_SECRET=your_webhook_secret
-
-# Server
-PORT=3000
-NODE_ENV=development
-
-# Redis (Optional)
-REDIS_URL=redis://localhost:6379
-
-# Rate Service
-RATE_POLLING_INTERVAL=30000
-RATE_LOCK_DURATION=120000
-```
-
 ## 📱 Usage
 
-1. **Start the bot** on Telegram: [@RadaBot](https://t.me/RadaBot)
+1. **Start the bot** on Telegram: [@RadaBot](https://t.me/Rada_Btc_Pay_bot)
 2. **Choose a service** from the main menu (Airtime, Bills, Goods, Send Money, Lipa na M-Pesa)
 3. **Enter payment details** (phone number, amount in KES, etc.)
 4. **Confirm payment** and see the Bitcoin amount in satoshis
@@ -140,12 +116,6 @@ RATE_LOCK_DURATION=120000
 7. **Webhook confirms** Lightning payment
 8. **M-Pesa payout** is automatically triggered
 9. **User receives** M-Pesa payment confirmation
-
-### Supported Lightning Wallets
-- **Phoenix Wallet** - Mobile Lightning wallet
-- **Breez Wallet** - Mobile Lightning wallet  
-- **Zeus Wallet** - Mobile Lightning wallet
-- **Any BOLT11 compatible wallet**
 
 ## 🧪 Testing
 
