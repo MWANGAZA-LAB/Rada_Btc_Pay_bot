@@ -363,16 +363,7 @@ class Server {
     try {
       logger.info('Starting server initialization...');
       
-      // Initialize services (Redis is optional)
-      try {
-        await sessionManager.initialize();
-        logger.info('Session manager initialized successfully');
-      } catch (error) {
-        logger.warn('Session manager initialization failed (Redis may be unavailable):', error);
-        logger.warn('Continuing without Redis - sessions will not persist across restarts');
-      }
-      
-      // Start the server first - this is critical for health checks
+      // Start the server FIRST - this is critical for health checks
       logger.info(`Attempting to start server on port ${config.server.port}`);
       this.server = this.app.listen(config.server.port, '0.0.0.0', () => {
         logger.info(`✅ Server running on port ${config.server.port}`);
@@ -390,8 +381,17 @@ class Server {
         logger.info('✅ Server is now listening for connections');
       });
 
-      // Wait a moment for server to start
+      // Wait for server to be ready
       await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Initialize services AFTER server is running (Redis is optional)
+      try {
+        await sessionManager.initialize();
+        logger.info('✅ Session manager initialized successfully');
+      } catch (error) {
+        logger.warn('Session manager initialization failed (Redis may be unavailable):', error);
+        logger.warn('Continuing without Redis - sessions will not persist across restarts');
+      }
 
       // Start the bot (make it optional for health checks)
       try {
