@@ -1,3 +1,15 @@
+export interface QRPaymentData {
+  type: string;
+  amount?: number;
+  phoneNumber?: string;
+  merchantName?: string;
+  paybillNumber?: string;
+  tillNumber?: string;
+  accountNumber?: string;
+  reference?: string;
+  currency?: string;
+}
+
 export interface UserSession {
   userId: number;
   currentService?: ServiceType;
@@ -8,7 +20,7 @@ export interface UserSession {
   transactionId?: string;
   qrScanMode?: boolean;
   originalInvoice?: string;
-  qrPaymentData?: any;
+  qrPaymentData?: QRPaymentData;
   createdAt: Date;
   updatedAt: Date;
 }

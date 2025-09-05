@@ -13,8 +13,7 @@ import {
   cancelKeyboard, 
   backToMenuKeyboard, 
   confirmPaymentKeyboard,
-  getServiceKeyboard,
-  getLightningInvoiceKeyboard
+  getServiceKeyboard
 } from './keyboards';
 import { messages, getServiceMessage, getInputPrompt, getConfirmationMessage } from './messages';
 import logger from '../utils/logger';
@@ -598,7 +597,7 @@ export class RadaBot {
     }
   }
 
-  private async handleQRResult(ctx: RadaContext, qrResult: any, originalInvoice?: string): Promise<void> {
+  private async handleQRResult(ctx: RadaContext, qrResult: { type?: string; parsedData?: Record<string, unknown>; data?: string }, originalInvoice?: string): Promise<void> {
     try {
       const { type, parsedData, data } = qrResult;
 
@@ -644,7 +643,7 @@ export class RadaBot {
     });
   }
 
-  private async handleMpesaMerchantQR(ctx: RadaContext, data: any): Promise<void> {
+  private async handleMpesaMerchantQR(ctx: RadaContext, data: Record<string, unknown>): Promise<void> {
     // Validate M-Pesa merchant data
     if (!qrCodeService.validateMpesaMerchant(data)) {
       await ctx.reply('❌ *Invalid M-Pesa Merchant QR*\n\nThis QR code does not contain valid M-Pesa merchant information.');
@@ -665,7 +664,7 @@ export class RadaBot {
     });
   }
 
-  private async handlePhoneNumberQR(ctx: RadaContext, data: any): Promise<void> {
+  private async handlePhoneNumberQR(ctx: RadaContext, data: Record<string, unknown>): Promise<void> {
     if (!qrCodeService.validatePhoneNumber(data.phoneNumber)) {
       await ctx.reply('❌ *Invalid Phone Number*\n\nThis QR code does not contain a valid Kenyan phone number.');
       return;
@@ -685,7 +684,7 @@ export class RadaBot {
     });
   }
 
-  private async handleCustomPaymentQR(ctx: RadaContext, data: any): Promise<void> {
+  private async handleCustomPaymentQR(ctx: RadaContext, data: Record<string, unknown>): Promise<void> {
     const message = messages.qrCustomPayment(data);
     const keyboard = {
       inline_keyboard: [
@@ -803,10 +802,9 @@ export class RadaBot {
     }
   }
 
-  private async createQRPaymentInvoice(ctx: RadaContext, type: string, data: any, amount: number): Promise<void> {
+  private async createQRPaymentInvoice(ctx: RadaContext, type: string, data: Record<string, unknown>, amount: number): Promise<void> {
     try {
-      // Get current exchange rate
-      const rateStatus = rateService.getRateStatus();
+      // Get current exchange rate and convert amount
       const satsAmount = rateService.convertKesToSats(amount);
       
       // Create Lightning invoice

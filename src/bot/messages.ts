@@ -264,7 +264,7 @@ Please send a photo of the QR code you want to scan.
 
 *Please try again with a clearer image or use the copy option instead.*`,
 
-  qrMpesaMerchant: (data: any) => {
+  qrMpesaMerchant: (data: Record<string, unknown>) => {
     const merchant = data.merchantName || 'Unknown Merchant';
     const destination = data.paybillNumber ? `Paybill: ${data.paybillNumber}` : `Till: ${data.tillNumber}`;
     const account = data.accountNumber ? `\n*Account:* ${data.accountNumber}` : '';
@@ -287,7 +287,7 @@ Please send a photo of the QR code you want to scan.
 
 *Enter the amount you want to send:*`,
 
-  qrCustomPayment: (data: any) => {
+  qrCustomPayment: (data: Record<string, unknown>) => {
     const merchant = data.merchantName || 'Custom Payment';
     const amount = data.amount ? `\n*Amount:* ${data.currency || 'KES'} ${data.amount.toLocaleString()}` : '';
     const reference = data.reference ? `\n*Reference:* ${data.reference}` : '';
@@ -299,7 +299,7 @@ Please send a photo of the QR code you want to scan.
 *This will create a Lightning invoice for this custom payment.*`;
   },
 
-  qrConfirmationPrompt: (type: string, data: any) => {
+  qrConfirmationPrompt: (type: string, data: Record<string, unknown>) => {
     const rateStatus = rateService.getRateStatus();
     const satsAmount = rateService.convertKesToSats(data.amount || 0);
     

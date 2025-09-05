@@ -141,7 +141,7 @@ class WalletDetectionService {
    * Test if a wallet is installed by attempting to open its URL scheme
    * Note: In a bot context, we can't actually test URL schemes, so we'll use heuristics
    */
-  private async testWalletInstallation(scheme: string): Promise<boolean> {
+  private async testWalletInstallation(): Promise<boolean> {
     // In a bot environment, we can't actually test if apps are installed
     // So we'll return false for now and rely on fallback behavior
     // In a real implementation, this could be enhanced with:
@@ -203,9 +203,7 @@ class WalletDetectionService {
   /**
    * Generate simple wallet selection keyboard for Telegram
    */
-  async generateWalletKeyboard(invoice: string): Promise<any> {
-    const detectionResult = await this.detectInstalledWallets();
-    
+  async generateWalletKeyboard(invoice: string): Promise<Record<string, unknown>> {
     // Always show the most common wallets in a simple layout
     const commonWallets = this.knownWallets.slice(0, 4); // Top 4 wallets
     const rows = this.createWalletRows(commonWallets, invoice);
@@ -224,8 +222,8 @@ class WalletDetectionService {
   /**
    * Create wallet button rows - simple 2x2 grid
    */
-  private createWalletRows(wallets: WalletInfo[], invoice: string): any[] {
-    const rows: any[] = [];
+  private createWalletRows(wallets: WalletInfo[], invoice: string): Record<string, unknown>[][] {
+    const rows: Record<string, unknown>[][] = [];
     
     // Create 2x2 grid (2 wallets per row, 2 rows)
     for (let i = 0; i < wallets.length; i += 2) {

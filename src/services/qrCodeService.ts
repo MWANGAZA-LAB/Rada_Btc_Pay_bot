@@ -20,7 +20,7 @@ export interface ParsedQRData {
   reference?: string;
   lightningInvoice?: string;
   bitcoinAddress?: string;
-  customData?: any;
+  customData?: Record<string, unknown>;
 }
 
 class QRCodeService {
