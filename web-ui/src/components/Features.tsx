@@ -68,7 +68,7 @@ const Features: React.FC = () => {
               <div
                 key={index}
                 className="feature-card group cursor-pointer"
-                onClick={() => window.open('https://t.me/RadaBot', '_blank')}
+                onClick={() => window.open('https://t.me/Rada_Btc_Pay_bot', '_blank')}
               >
                 <div className="flex items-start space-x-4">
                   <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${feature.color} group-hover:scale-110 transition-transform duration-200`}>
@@ -94,7 +94,7 @@ const Features: React.FC = () => {
         
         <div className="text-center mt-12">
           <a
-            href="https://t.me/RadaBot"
+            href="https://t.me/Rada_Btc_Pay_bot"
             target="_blank"
             rel="noopener noreferrer"
             className="btn-primary text-lg px-8 py-4 inline-flex items-center space-x-2"
