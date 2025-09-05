@@ -8,6 +8,7 @@ export interface UserSession {
   transactionId?: string;
   qrScanMode?: boolean;
   originalInvoice?: string;
+  qrPaymentData?: any;
   createdAt: Date;
   updatedAt: Date;
 }

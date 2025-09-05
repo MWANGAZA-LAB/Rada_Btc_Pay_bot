@@ -5,7 +5,22 @@ export interface QRCodeResult {
   success: boolean;
   data?: string;
   error?: string;
-  type?: 'lightning' | 'bitcoin' | 'text' | 'unknown';
+  type?: 'lightning' | 'bitcoin' | 'mpesa_merchant' | 'phone_number' | 'custom_payment' | 'text' | 'unknown';
+  parsedData?: ParsedQRData;
+}
+
+export interface ParsedQRData {
+  merchantName?: string;
+  paybillNumber?: string;
+  tillNumber?: string;
+  accountNumber?: string;
+  phoneNumber?: string;
+  amount?: number;
+  currency?: string;
+  reference?: string;
+  lightningInvoice?: string;
+  bitcoinAddress?: string;
+  customData?: any;
 }
 
 class QRCodeService {
@@ -76,7 +91,10 @@ class QRCodeService {
         return {
           success: true,
           data: cleanData,
-          type: 'lightning'
+          type: 'lightning',
+          parsedData: {
+            lightningInvoice: cleanData
+          }
         };
       }
 
@@ -85,16 +103,56 @@ class QRCodeService {
         return {
           success: true,
           data: cleanData,
-          type: 'bitcoin'
+          type: 'bitcoin',
+          parsedData: {
+            bitcoinAddress: cleanData
+          }
         };
       }
 
       // Check if it's a Bitcoin URI
       if (this.isBitcoinURI(cleanData)) {
+        const address = this.extractBitcoinAddressFromURI(cleanData);
         return {
           success: true,
           data: cleanData,
-          type: 'bitcoin'
+          type: 'bitcoin',
+          parsedData: {
+            bitcoinAddress: address
+          }
+        };
+      }
+
+      // Check if it's an M-Pesa merchant QR
+      const mpesaData = this.parseMpesaQR(cleanData);
+      if (mpesaData) {
+        return {
+          success: true,
+          data: cleanData,
+          type: 'mpesa_merchant',
+          parsedData: mpesaData
+        };
+      }
+
+      // Check if it's a phone number QR
+      const phoneData = this.parsePhoneNumberQR(cleanData);
+      if (phoneData) {
+        return {
+          success: true,
+          data: cleanData,
+          type: 'phone_number',
+          parsedData: phoneData
+        };
+      }
+
+      // Check if it's a custom payment QR
+      const customData = this.parseCustomPaymentQR(cleanData);
+      if (customData) {
+        return {
+          success: true,
+          data: cleanData,
+          type: 'custom_payment',
+          parsedData: customData
         };
       }
 
@@ -167,6 +225,169 @@ class QRCodeService {
    */
   validateLightningInvoice(invoice: string): boolean {
     return this.isLightningInvoice(invoice);
+  }
+
+  /**
+   * Parse M-Pesa merchant QR codes
+   */
+  private parseMpesaQR(data: string): ParsedQRData | null {
+    try {
+      // M-Pesa QR format examples:
+      // "MPESA*123456*1000*Account Reference"
+      // "MPESA*TILL*987654*Account Reference"
+      // "PAYBILL*123456*Account Reference*1000"
+      
+      const mpesaMatch = data.match(/^MPESA\*([^*]+)\*([^*]+)(?:\*([^*]+))?(?:\*([^*]+))?$/i);
+      if (mpesaMatch) {
+        const [, type, number, amount, reference] = mpesaMatch;
+        
+        if (type.toUpperCase() === 'TILL') {
+          return {
+            tillNumber: number,
+            accountNumber: reference,
+            amount: amount ? parseFloat(amount) : undefined,
+            currency: 'KES'
+          };
+        } else if (type.toUpperCase() === 'PAYBILL' || /^\d+$/.test(type)) {
+          return {
+            paybillNumber: number,
+            accountNumber: reference,
+            amount: amount ? parseFloat(amount) : undefined,
+            currency: 'KES'
+          };
+        }
+      }
+
+      // Alternative PAYBILL format
+      const paybillMatch = data.match(/^PAYBILL\*([^*]+)\*([^*]+)(?:\*([^*]+))?(?:\*([^*]+))?$/i);
+      if (paybillMatch) {
+        const [, paybill, account, amount, reference] = paybillMatch;
+        return {
+          paybillNumber: paybill,
+          accountNumber: account,
+          reference: reference,
+          amount: amount ? parseFloat(amount) : undefined,
+          currency: 'KES'
+        };
+      }
+
+      return null;
+    } catch (error) {
+      logger.error('Error parsing M-Pesa QR:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Parse phone number QR codes
+   */
+  private parsePhoneNumberQR(data: string): ParsedQRData | null {
+    try {
+      // Phone number formats:
+      // "0712345678"
+      // "+254712345678"
+      // "tel:+254712345678"
+      // "sms:+254712345678"
+      
+      const phoneMatch = data.match(/^(?:tel:|sms:)?(\+?254|0)(\d{9})$/);
+      if (phoneMatch) {
+        const [, prefix, number] = phoneMatch;
+        let fullNumber = number;
+        
+        if (prefix === '0') {
+          fullNumber = '254' + number;
+        } else if (prefix === '+254') {
+          fullNumber = '254' + number;
+        }
+        
+        return {
+          phoneNumber: fullNumber
+        };
+      }
+
+      // Direct phone number
+      if (/^(?:254|0)\d{9}$/.test(data)) {
+        let phoneNumber = data;
+        if (data.startsWith('0')) {
+          phoneNumber = '254' + data.substring(1);
+        }
+        return {
+          phoneNumber: phoneNumber
+        };
+      }
+
+      return null;
+    } catch (error) {
+      logger.error('Error parsing phone number QR:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Parse custom payment QR codes (JSON format)
+   */
+  private parseCustomPaymentQR(data: string): ParsedQRData | null {
+    try {
+      // Try to parse as JSON
+      const jsonData = JSON.parse(data);
+      
+      if (jsonData.type === 'payment' || jsonData.payment) {
+        return {
+          merchantName: jsonData.merchant || jsonData.merchantName,
+          paybillNumber: jsonData.paybill,
+          tillNumber: jsonData.till,
+          accountNumber: jsonData.account,
+          phoneNumber: jsonData.phone,
+          amount: jsonData.amount,
+          currency: jsonData.currency || 'KES',
+          reference: jsonData.reference,
+          customData: jsonData
+        };
+      }
+
+      return null;
+    } catch (error) {
+      // Not JSON, try other custom formats
+      logger.debug('Not a JSON custom payment QR');
+      return null;
+    }
+  }
+
+  /**
+   * Extract Bitcoin address from Bitcoin URI
+   */
+  private extractBitcoinAddressFromURI(uri: string): string {
+    const match = uri.match(/^bitcoin:([^?]+)/);
+    return match ? match[1] : uri;
+  }
+
+  /**
+   * Validate M-Pesa merchant data
+   */
+  validateMpesaMerchant(data: ParsedQRData): boolean {
+    if (!data.paybillNumber && !data.tillNumber) {
+      return false;
+    }
+
+    // Validate paybill number (5-7 digits)
+    if (data.paybillNumber && !/^\d{5,7}$/.test(data.paybillNumber)) {
+      return false;
+    }
+
+    // Validate till number (6-7 digits)
+    if (data.tillNumber && !/^\d{6,7}$/.test(data.tillNumber)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Validate phone number
+   */
+  validatePhoneNumber(phoneNumber: string): boolean {
+    // Kenyan phone number validation
+    return /^254\d{9}$/.test(phoneNumber);
   }
 }
 

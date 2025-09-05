@@ -160,6 +160,27 @@ export class RadaBot {
       }
     });
 
+    this.bot.callbackQuery(/^create_mpesa_invoice:(.+)$/, async (ctx: RadaContext) => {
+      const data = ctx.match?.[1];
+      if (data) {
+        await this.handleCreateMpesaInvoice(ctx, data);
+      }
+    });
+
+    this.bot.callbackQuery(/^create_custom_invoice:(.+)$/, async (ctx: RadaContext) => {
+      const data = ctx.match?.[1];
+      if (data) {
+        await this.handleCreateCustomInvoice(ctx, data);
+      }
+    });
+
+    this.bot.callbackQuery(/^enter_amount:(.+)$/, async (ctx: RadaContext) => {
+      const phoneNumber = ctx.match?.[1];
+      if (phoneNumber) {
+        await this.handleEnterAmount(ctx, phoneNumber);
+      }
+    });
+
     // Lightning invoice callbacks (legacy - keeping for compatibility)
     this.bot.callbackQuery(/^copy_invoice_(.+)$/, async (ctx: RadaContext) => {
       const invoice = ctx.match?.[1];
@@ -366,21 +387,45 @@ export class RadaBot {
 
   private async handlePhotoUpload(ctx: RadaContext): Promise<void> {
     try {
-      const session = ctx.session as UserSession;
+      const session = sessionManager.getSession(ctx.from!.id);
       
-      if (session.currentService !== 'qr_scan') {
-        await ctx.reply('Please select "Scan QR Code" service first.');
+      if (!session || !session.qrScanMode) {
+        await ctx.reply('Please use the "📷 Scan QR" button first to activate QR scanning mode.');
         return;
       }
 
-      // For now, we'll ask user to enter QR data manually
-      // In a real implementation, you'd process the image
-      await ctx.reply('Please enter the QR code data manually:', {
-        reply_markup: cancelKeyboard,
-      });
+      const photo = ctx.message?.photo;
+      if (!photo || photo.length === 0) {
+        await ctx.reply('No photo found. Please try again.');
+        return;
+      }
+
+      // Get the largest photo
+      const largestPhoto = photo[photo.length - 1];
+      const file = await ctx.api.getFile(largestPhoto.file_id);
+      const fileUrl = `https://api.telegram.org/file/bot${config.telegram.botToken}/${file.file_path}`;
+
+      // Download and process the image
+      const response = await fetch(fileUrl);
+      const buffer = Buffer.from(await response.arrayBuffer());
+
+      // Parse QR code
+      const qrResult = await qrCodeService.parseQRCodeFromBuffer(buffer);
+      
+      if (!qrResult.success) {
+        await ctx.reply(messages.qrScanError(qrResult.error || 'Unknown error'));
+        return;
+      }
+
+      // Handle different QR types
+      await this.handleQRResult(ctx, qrResult, session.originalInvoice);
+
+      // Clear QR scan mode
+      sessionManager.updateSession(ctx.from!.id, { qrScanMode: false, originalInvoice: undefined });
+      
     } catch (error) {
-      logger.error('Error in handlePhotoUpload:', error);
-      await ctx.reply(messages.errors.invalidInput);
+      logger.error('Error processing photo upload:', error);
+      await ctx.reply('Failed to process the image. Please try again with a clearer photo.');
     }
   }
 
@@ -550,6 +595,251 @@ export class RadaBot {
     } catch (error) {
       logger.error('Error in handleUseInvoice:', error);
       await ctx.answerCallbackQuery('Failed to use invoice');
+    }
+  }
+
+  private async handleQRResult(ctx: RadaContext, qrResult: any, originalInvoice?: string): Promise<void> {
+    try {
+      const { type, parsedData, data } = qrResult;
+
+      switch (type) {
+        case 'lightning':
+          await this.handleLightningQR(ctx, parsedData?.lightningInvoice || data);
+          break;
+        
+        case 'mpesa_merchant':
+          await this.handleMpesaMerchantQR(ctx, parsedData);
+          break;
+        
+        case 'phone_number':
+          await this.handlePhoneNumberQR(ctx, parsedData);
+          break;
+        
+        case 'custom_payment':
+          await this.handleCustomPaymentQR(ctx, parsedData);
+          break;
+        
+        case 'bitcoin':
+          await this.handleBitcoinQR(ctx, parsedData?.bitcoinAddress || data);
+          break;
+        
+        default:
+          await this.handleUnknownQR(ctx, data, originalInvoice);
+      }
+    } catch (error) {
+      logger.error('Error handling QR result:', error);
+      await ctx.reply('Failed to process QR code. Please try again.');
+    }
+  }
+
+  private async handleLightningQR(ctx: RadaContext, invoice: string): Promise<void> {
+    await ctx.reply(messages.qrScanSuccess(invoice, 'lightning'), {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '✅ Use This Invoice', callback_data: `use_invoice:${invoice}` }],
+          [{ text: '🔄 Scan Another', callback_data: `scan_qr:${invoice}` }]
+        ]
+      }
+    });
+  }
+
+  private async handleMpesaMerchantQR(ctx: RadaContext, data: any): Promise<void> {
+    // Validate M-Pesa merchant data
+    if (!qrCodeService.validateMpesaMerchant(data)) {
+      await ctx.reply('❌ *Invalid M-Pesa Merchant QR*\n\nThis QR code does not contain valid M-Pesa merchant information.');
+      return;
+    }
+
+    const message = messages.qrMpesaMerchant(data);
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: '✅ Create Lightning Invoice', callback_data: `create_mpesa_invoice:${JSON.stringify(data)}` }],
+        [{ text: '🔄 Scan Another', callback_data: `scan_qr:` }]
+      ]
+    };
+
+    await ctx.reply(message, {
+      parse_mode: 'Markdown',
+      reply_markup: keyboard
+    });
+  }
+
+  private async handlePhoneNumberQR(ctx: RadaContext, data: any): Promise<void> {
+    if (!qrCodeService.validatePhoneNumber(data.phoneNumber)) {
+      await ctx.reply('❌ *Invalid Phone Number*\n\nThis QR code does not contain a valid Kenyan phone number.');
+      return;
+    }
+
+    const message = messages.qrPhoneNumber(data.phoneNumber);
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: '✅ Enter Amount', callback_data: `enter_amount:${data.phoneNumber}` }],
+        [{ text: '🔄 Scan Another', callback_data: `scan_qr:` }]
+      ]
+    };
+
+    await ctx.reply(message, {
+      parse_mode: 'Markdown',
+      reply_markup: keyboard
+    });
+  }
+
+  private async handleCustomPaymentQR(ctx: RadaContext, data: any): Promise<void> {
+    const message = messages.qrCustomPayment(data);
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: '✅ Create Lightning Invoice', callback_data: `create_custom_invoice:${JSON.stringify(data)}` }],
+        [{ text: '🔄 Scan Another', callback_data: `scan_qr:` }]
+      ]
+    };
+
+    await ctx.reply(message, {
+      parse_mode: 'Markdown',
+      reply_markup: keyboard
+    });
+  }
+
+  private async handleBitcoinQR(ctx: RadaContext, address: string): Promise<void> {
+    await ctx.reply(`₿ *Bitcoin Address Detected*\n\n*Address:* \`${address}\`\n\n*Note:* This is a Bitcoin address, not a Lightning invoice. For Lightning payments, please scan a Lightning invoice QR code.`, {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '🔄 Scan Another', callback_data: `scan_qr:` }]
+        ]
+      }
+    });
+  }
+
+  private async handleUnknownQR(ctx: RadaContext, data: string, originalInvoice?: string): Promise<void> {
+    await ctx.reply(`❓ *Unknown QR Code Type*\n\n*Data:* \`${data}\`\n\n*Type:* Unknown\n\nThis QR code could not be identified as a payment-related code. Please scan a Lightning invoice, M-Pesa merchant QR, or phone number QR.`, {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '🔄 Scan Another', callback_data: `scan_qr:${originalInvoice || ''}` }]
+        ]
+      }
+    });
+  }
+
+  private async handleCreateMpesaInvoice(ctx: RadaContext, dataString: string): Promise<void> {
+    try {
+      await ctx.answerCallbackQuery('Creating Lightning invoice...');
+      
+      const data = JSON.parse(dataString);
+      const amount = data.amount || 0;
+      
+      if (amount <= 0) {
+        await ctx.reply('❌ *Amount Required*\n\nThis M-Pesa merchant QR does not include an amount. Please enter the amount manually:', {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '💰 Enter Amount', callback_data: `enter_mpesa_amount:${dataString}` }]
+            ]
+          }
+        });
+        return;
+      }
+
+      // Create Lightning invoice for M-Pesa payment
+      await this.createQRPaymentInvoice(ctx, 'mpesa_merchant', data, amount);
+      
+    } catch (error) {
+      logger.error('Error creating M-Pesa invoice:', error);
+      await ctx.answerCallbackQuery('Failed to create invoice');
+    }
+  }
+
+  private async handleCreateCustomInvoice(ctx: RadaContext, dataString: string): Promise<void> {
+    try {
+      await ctx.answerCallbackQuery('Creating Lightning invoice...');
+      
+      const data = JSON.parse(dataString);
+      const amount = data.amount || 0;
+      
+      if (amount <= 0) {
+        await ctx.reply('❌ *Amount Required*\n\nThis custom payment QR does not include an amount. Please enter the amount manually:', {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '💰 Enter Amount', callback_data: `enter_custom_amount:${dataString}` }]
+            ]
+          }
+        });
+        return;
+      }
+
+      // Create Lightning invoice for custom payment
+      await this.createQRPaymentInvoice(ctx, 'custom_payment', data, amount);
+      
+    } catch (error) {
+      logger.error('Error creating custom invoice:', error);
+      await ctx.answerCallbackQuery('Failed to create invoice');
+    }
+  }
+
+  private async handleEnterAmount(ctx: RadaContext, phoneNumber: string): Promise<void> {
+    try {
+      await ctx.answerCallbackQuery('Amount entry mode activated');
+      
+      // Store phone number in session for amount entry
+      sessionManager.updateSession(ctx.from!.id, {
+        qrScanMode: true,
+        qrPaymentData: { phoneNumber, type: 'phone_number' }
+      });
+      
+      await ctx.reply(`💰 *Enter Amount for ${phoneNumber}*\n\nEnter the amount in KES you want to send:`, {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '❌ Cancel', callback_data: 'cancel_qr_scan' }]
+          ]
+        }
+      });
+      
+    } catch (error) {
+      logger.error('Error in handleEnterAmount:', error);
+      await ctx.answerCallbackQuery('Failed to activate amount entry');
+    }
+  }
+
+  private async createQRPaymentInvoice(ctx: RadaContext, type: string, data: any, amount: number): Promise<void> {
+    try {
+      // Get current exchange rate
+      const rateStatus = rateService.getRateStatus();
+      const satsAmount = rateService.convertKesToSats(amount);
+      
+      // Create Lightning invoice
+      const invoiceResponse = await minmoService.generateLightningInvoice({
+        amount: satsAmount,
+        description: `QR Payment - ${type}`,
+        expiry: 600 // 10 minutes
+      });
+
+      if (!invoiceResponse.success) {
+        await ctx.reply('❌ *Failed to Create Invoice*\n\nUnable to generate Lightning invoice. Please try again.');
+        return;
+      }
+
+      // Store payment data in session
+      sessionManager.updateSession(ctx.from!.id, {
+        lightningInvoice: invoiceResponse.invoice,
+        invoiceId: invoiceResponse.invoiceId,
+        qrPaymentData: { ...data, type, amount }
+      });
+
+      // Show confirmation and wallet options
+      const confirmationMessage = messages.qrConfirmationPrompt(type, { amount });
+      const keyboard = await walletDetectionService.generateWalletKeyboard(invoiceResponse.invoice);
+      
+      await ctx.reply(confirmationMessage, {
+        parse_mode: 'Markdown',
+        reply_markup: keyboard
+      });
+      
+    } catch (error) {
+      logger.error('Error creating QR payment invoice:', error);
+      await ctx.reply('❌ *Failed to Create Invoice*\n\nUnable to generate Lightning invoice. Please try again.');
     }
   }
 

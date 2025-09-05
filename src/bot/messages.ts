@@ -1,5 +1,6 @@
 import { ServiceType } from '../types';
 import { formatAmount, formatSats } from '../utils/validation';
+import { rateService } from '../services/rateService';
 
 export const messages = {
   welcome: `🚀 *Welcome to Rada Bot!*
@@ -262,6 +263,64 @@ Please send a photo of the QR code you want to scan.
 *Error:* ${error}
 
 *Please try again with a clearer image or use the copy option instead.*`,
+
+  qrMpesaMerchant: (data: any) => {
+    const merchant = data.merchantName || 'Unknown Merchant';
+    const destination = data.paybillNumber ? `Paybill: ${data.paybillNumber}` : `Till: ${data.tillNumber}`;
+    const account = data.accountNumber ? `\n*Account:* ${data.accountNumber}` : '';
+    const amount = data.amount ? `\n*Amount:* KES ${data.amount.toLocaleString()}` : '';
+    
+    return `🏪 *M-Pesa Merchant Detected*
+
+*Merchant:* ${merchant}
+*Destination:* ${destination}${account}${amount}
+
+*This will create a Lightning invoice to pay this M-Pesa merchant.*`;
+  },
+
+  qrPhoneNumber: (phoneNumber: string) =>
+    `📱 *Phone Number Detected*
+
+*Number:* ${phoneNumber}
+
+*This will create a Lightning invoice to send money to this phone number.*
+
+*Enter the amount you want to send:*`,
+
+  qrCustomPayment: (data: any) => {
+    const merchant = data.merchantName || 'Custom Payment';
+    const amount = data.amount ? `\n*Amount:* ${data.currency || 'KES'} ${data.amount.toLocaleString()}` : '';
+    const reference = data.reference ? `\n*Reference:* ${data.reference}` : '';
+    
+    return `💳 *Custom Payment Detected*
+
+*Merchant:* ${merchant}${amount}${reference}
+
+*This will create a Lightning invoice for this custom payment.*`;
+  },
+
+  qrConfirmationPrompt: (type: string, data: any) => {
+    const rateStatus = rateService.getRateStatus();
+    const satsAmount = rateService.convertKesToSats(data.amount || 0);
+    
+    return `✅ *Confirm Payment*
+
+*Type:* ${type}
+*Amount:* KES ${(data.amount || 0).toLocaleString()}
+*Bitcoin Cost:* ${formatSats(satsAmount)}
+*Rate:* 1 BTC = ${rateStatus.rate.toLocaleString()} KES
+
+*Rate valid for 2 minutes*
+
+*Create Lightning Invoice?*`;
+  },
+
+  qrRateExpired: () =>
+    `⏰ *Rate Expired*
+
+The exchange rate has expired. Please scan the QR code again to get a fresh rate.
+
+*Rate expires after 2 minutes for security.*`,
 
   paymentFailed: (reason: string) =>
     `❌ *Payment Failed*
