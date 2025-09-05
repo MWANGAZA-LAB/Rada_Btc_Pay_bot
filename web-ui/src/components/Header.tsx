@@ -24,7 +24,7 @@ const Header: React.FC = () => {
               How it Works
             </a>
             <a 
-              href="https://github.com/rada-bot/rada-bot" 
+              href="https://github.com/MWANGAZA-LAB/Rada_Btc_Pay_bot" 
               target="_blank" 
               rel="noopener noreferrer"
               className="flex items-center space-x-2 text-gray-600 hover:text-primary-600 transition-colors"

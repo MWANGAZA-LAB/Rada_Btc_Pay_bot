@@ -57,7 +57,7 @@ const Footer: React.FC = () => {
             <ul className="space-y-2">
               <li>
                 <a 
-                  href="https://github.com/rada-bot/rada-bot" 
+                  href="https://github.com/MWANGAZA-LAB/Rada_Btc_Pay_bot" 
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-gray-400 hover:text-white transition-colors flex items-center space-x-2"
