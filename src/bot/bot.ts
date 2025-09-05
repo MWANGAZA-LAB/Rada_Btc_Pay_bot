@@ -4,6 +4,7 @@ import { sessionManager } from '../services/sessionManager';
 import { minmoService } from '../services/minmoService';
 import { rateService } from '../services/rateService';
 import { walletDetectionService } from '../services/walletDetectionService';
+import { qrCodeService } from '../services/qrCodeService';
 import { validatePaymentData, formatPhoneNumber } from '../utils/validation';
 import { ServiceType, UserSession } from '../types';
 import { RadaContext } from './types';
@@ -138,6 +139,24 @@ export class RadaBot {
       const invoice = ctx.match?.[1];
       if (invoice) {
         await this.handleCopyInvoice(ctx, invoice);
+      }
+    });
+
+    this.bot.callbackQuery(/^scan_qr:(.+)$/, async (ctx: RadaContext) => {
+      const invoice = ctx.match?.[1];
+      if (invoice) {
+        await this.handleQRScan(ctx, invoice);
+      }
+    });
+
+    this.bot.callbackQuery('cancel_qr_scan', async (ctx: RadaContext) => {
+      await this.handleCancelQRScan(ctx);
+    });
+
+    this.bot.callbackQuery(/^use_invoice:(.+)$/, async (ctx: RadaContext) => {
+      const invoice = ctx.match?.[1];
+      if (invoice) {
+        await this.handleUseInvoice(ctx, invoice);
       }
     });
 
@@ -477,6 +496,60 @@ export class RadaBot {
     } catch (error) {
       logger.error('Error in handleCopyInvoice:', error);
       await ctx.answerCallbackQuery('Failed to copy');
+    }
+  }
+
+  private async handleQRScan(ctx: RadaContext, invoice: string): Promise<void> {
+    try {
+      await ctx.answerCallbackQuery('QR Scanner activated');
+      await ctx.reply(messages.qrScanPrompt, {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '❌ Cancel', callback_data: 'cancel_qr_scan' }]
+          ]
+        }
+      });
+      
+      // Store the original invoice in session for comparison
+      sessionManager.updateSession(ctx.from!.id, { 
+        qrScanMode: true, 
+        originalInvoice: invoice 
+      });
+    } catch (error) {
+      logger.error('Error in handleQRScan:', error);
+      await ctx.answerCallbackQuery('Failed to activate QR scanner');
+    }
+  }
+
+  private async handleCancelQRScan(ctx: RadaContext): Promise<void> {
+    try {
+      await ctx.answerCallbackQuery('QR scan cancelled');
+      sessionManager.updateSession(ctx.from!.id, { 
+        qrScanMode: false, 
+        originalInvoice: undefined 
+      });
+      await ctx.reply('QR scan cancelled. You can use the copy option or tap a wallet button instead.');
+    } catch (error) {
+      logger.error('Error in handleCancelQRScan:', error);
+      await ctx.answerCallbackQuery('Failed to cancel QR scan');
+    }
+  }
+
+  private async handleUseInvoice(ctx: RadaContext, invoice: string): Promise<void> {
+    try {
+      await ctx.answerCallbackQuery('Invoice selected');
+      
+      // Generate new wallet keyboard with the scanned invoice
+      const keyboard = await walletDetectionService.generateWalletKeyboard(invoice);
+      
+      await ctx.reply(`✅ *Using Scanned Invoice*\n\n\`${invoice}\`\n\n*Choose your payment method:*`, {
+        parse_mode: 'Markdown',
+        reply_markup: keyboard
+      });
+    } catch (error) {
+      logger.error('Error in handleUseInvoice:', error);
+      await ctx.answerCallbackQuery('Failed to use invoice');
     }
   }
 

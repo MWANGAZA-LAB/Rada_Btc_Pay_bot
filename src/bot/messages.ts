@@ -213,7 +213,7 @@ ${rate}
 
 \`${invoice}\`
 
-*Tap a wallet below or copy the invoice.*`,
+*Tap a wallet below, copy the invoice, or scan QR code.*`,
 
   paymentSuccess: (kshAmount: number, recipient: string, transactionId: string) =>
     `✅ *Payment Successful!*
@@ -222,6 +222,46 @@ ${rate}
 *Transaction ID:* ${transactionId}
 
 *Thank you for using Rada Bot!* 🚀`,
+
+  qrScanInstructions: `📷 *QR Code Scanner*
+
+*How to scan:*
+1. Tap "📷 Scan QR" button
+2. Take a photo of the QR code
+3. Bot will extract the Lightning invoice
+4. Complete your payment
+
+*Supported QR codes:*
+• Lightning invoices (lnbc...)
+• Bitcoin addresses
+• Lightning URIs (lightning:lnbc...)
+
+*Note:* Make sure the QR code is clear and well-lit.`,
+
+  qrScanPrompt: `📷 *Scan QR Code*
+
+Please send a photo of the QR code you want to scan.
+
+*Tips:*
+• Ensure good lighting
+• Keep the QR code centered
+• Avoid blurry images
+• QR code should fill most of the frame`,
+
+  qrScanSuccess: (invoice: string, type: string) =>
+    `✅ *QR Code Scanned Successfully!*
+
+*Type:* ${type}
+*Invoice:* \`${invoice}\`
+
+*You can now complete your payment using this invoice.*`,
+
+  qrScanError: (error: string) =>
+    `❌ *QR Code Scan Failed*
+
+*Error:* ${error}
+
+*Please try again with a clearer image or use the copy option instead.*`,
 
   paymentFailed: (reason: string) =>
     `❌ *Payment Failed*

@@ -6,6 +6,8 @@ export interface UserSession {
   invoiceId?: string;
   rateLock?: RateLock;
   transactionId?: string;
+  qrScanMode?: boolean;
+  originalInvoice?: string;
   createdAt: Date;
   updatedAt: Date;
 }

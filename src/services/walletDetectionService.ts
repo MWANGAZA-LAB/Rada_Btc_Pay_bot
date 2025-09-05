@@ -210,8 +210,11 @@ class WalletDetectionService {
     const commonWallets = this.knownWallets.slice(0, 4); // Top 4 wallets
     const rows = this.createWalletRows(commonWallets, invoice);
     
-    // Add copy option
-    rows.push([{ text: '📋 Copy', callback_data: `copy_invoice:${invoice}` }]);
+    // Add copy and QR scan options
+    rows.push([
+      { text: '📋 Copy', callback_data: `copy_invoice:${invoice}` },
+      { text: '📷 Scan QR', callback_data: `scan_qr:${invoice}` }
+    ]);
     
     return {
       inline_keyboard: rows
