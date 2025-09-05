@@ -11,6 +11,7 @@ Rada Bot is a non-custodial tool that lets users pay with Bitcoin and instantly 
 - 🛒 **Buy Goods** - Purchase goods and services with Bitcoin
 - 💸 **Send Money** - Send M-Pesa payments using Bitcoin
 - 💰 **Lipa na M-Pesa** - Use Bitcoin to make M-Pesa payments
+- 📷 **QR Code Scanning** - Scan M-Pesa QR codes to pay with Bitcoin
 - ⚡ **Lightning Network** - Fast, low-cost Bitcoin transactions
 - 🔒 **Non-Custodial** - You control your Bitcoin, we never hold it
 - 💱 **Real-time Rates** - Live Bitcoin to KES exchange rates
@@ -97,9 +98,9 @@ Rada Bot is a non-custodial tool that lets users pay with Bitcoin and instantly 
 
 ## 📱 Usage
 
-1. **Start the bot** on Telegram: [@RadaBot](https://t.me/Rada_Btc_Pay_bot)
+1. **Start the bot** on Telegram: [@Rada_Btc_Pay_bot](https://t.me/Rada_Btc_Pay_bot)
 2. **Choose a service** from the main menu (Airtime, Bills, Goods, Send Money, Lipa na M-Pesa)
-3. **Enter payment details** (phone number, amount in KES, etc.)
+3. **Enter payment details** (phone number, amount in KES, etc.) OR **scan QR codes** for instant payment
 4. **Confirm payment** and see the Bitcoin amount in satoshis
 5. **Pay with Lightning** using your Bitcoin wallet
 6. **M-Pesa payment** is automatically executed after Lightning payment
@@ -107,8 +108,8 @@ Rada Bot is a non-custodial tool that lets users pay with Bitcoin and instantly 
 ## 💡 How It Works
 
 ### Payment Flow
-1. **User selects service** (Airtime, Bills, etc.)
-2. **Enters details** (phone number, amount in KES)
+1. **User selects service** (Airtime, Bills, etc.) OR **scans QR code**
+2. **Enters details** (phone number, amount in KES) OR **QR data is auto-filled**
 3. **Bot shows conversion** (KES amount → Bitcoin satoshis)
 4. **Rate is locked** for 2 minutes to prevent fluctuations
 5. **Lightning invoice** is generated via Minmo API
@@ -116,6 +117,14 @@ Rada Bot is a non-custodial tool that lets users pay with Bitcoin and instantly 
 7. **Webhook confirms** Lightning payment
 8. **M-Pesa payout** is automatically triggered
 9. **User receives** M-Pesa payment confirmation
+
+### QR Code Scanning
+The bot can automatically detect and process different types of QR codes:
+- **M-Pesa Merchant QR** - Paybill/Till numbers with amounts
+- **Phone Number QR** - Direct phone number payments
+- **Lightning Invoice QR** - Direct Bitcoin Lightning payments
+- **Bitcoin Address QR** - Bitcoin address payments
+- **Custom Payment QR** - Custom payment data
 
 ## 🧪 Testing
 
@@ -249,7 +258,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🆘 Support
 
 - 📧 Email: support@mwanga.com
-- 💬 Telegram: [@RadaBot](https://t.me/RadaBot)
+- 💬 Telegram: [@Rada_Btc_Pay_bot](https://t.me/Rada_Btc_Pay_bot)
 - 🐛 Issues: [GitHub Issues](https://github.com/MWANGAZA-LAB/Rada_Btc_Pay_bot/issues)
 
 ## 🙏 Acknowledgments
