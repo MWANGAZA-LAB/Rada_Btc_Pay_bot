@@ -420,7 +420,11 @@ export class RadaBot {
       }
 
       // Handle different QR types
-      await this.handleQRResult(ctx, qrResult, session.originalInvoice);
+      await this.handleQRResult(ctx, {
+        type: qrResult.type || undefined,
+        parsedData: qrResult.parsedData as Record<string, unknown> || undefined,
+        data: qrResult.data || undefined
+      }, session.originalInvoice);
 
       // Clear QR scan mode
       sessionManager.updateSession(ctx.from!.id, { qrScanMode: false });
@@ -600,13 +604,13 @@ export class RadaBot {
     }
   }
 
-  private async handleQRResult(ctx: RadaContext, qrResult: { type?: string; parsedData?: Record<string, unknown>; data?: string }, originalInvoice?: string): Promise<void> {
+  private async handleQRResult(ctx: RadaContext, qrResult: { type?: string | undefined; parsedData?: Record<string, unknown> | undefined; data?: string | undefined }, originalInvoice?: string): Promise<void> {
     try {
       const { type, parsedData, data } = qrResult;
 
       switch (type) {
         case 'lightning':
-          await this.handleLightningQR(ctx, parsedData?.lightningInvoice || data || '');
+          await this.handleLightningQR(ctx, (parsedData?.lightningInvoice as string) || data || '');
           break;
         
         case 'mpesa_merchant':
@@ -622,7 +626,7 @@ export class RadaBot {
           break;
         
         case 'bitcoin':
-          await this.handleBitcoinQR(ctx, parsedData?.bitcoinAddress || data || '');
+          await this.handleBitcoinQR(ctx, (parsedData?.bitcoinAddress as string) || data || '');
           break;
         
         default:
