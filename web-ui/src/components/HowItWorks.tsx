@@ -10,16 +10,16 @@ const HowItWorks: React.FC = () => {
       color: 'bg-primary-100 text-primary-600',
     },
     {
-      icon: CreditCard,
-      title: 'Pay with M-Pesa',
-      description: 'Complete your payment via M-Pesa STK Push or QR code',
-      color: 'bg-green-100 text-green-600',
+      icon: Bitcoin,
+      title: 'Pay with Bitcoin',
+      description: 'Copy Lightning invoice to your Bitcoin wallet and pay',
+      color: 'bg-bitcoin-100 text-bitcoin-600',
     },
     {
-      icon: Bitcoin,
-      title: 'Get Bitcoin',
-      description: 'Receive Bitcoin instantly in your wallet',
-      color: 'bg-bitcoin-100 text-bitcoin-600',
+      icon: CreditCard,
+      title: 'Get M-Pesa Service',
+      description: 'Receive your M-Pesa service instantly (airtime, bills, etc.)',
+      color: 'bg-green-100 text-green-600',
     },
   ]
 
@@ -31,7 +31,7 @@ const HowItWorks: React.FC = () => {
             How It Works
           </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Simple, secure, and fast. Get Bitcoin for your everyday M-Pesa transactions
+            Simple, secure, and fast. Pay with Bitcoin to get M-Pesa services instantly
           </p>
         </div>
         
@@ -65,7 +65,7 @@ const HowItWorks: React.FC = () => {
               Why Choose Rada Bot?
             </h3>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              We make Bitcoin accessible to everyone through familiar M-Pesa payments
+              We make M-Pesa services accessible to everyone through Bitcoin Lightning payments
             </p>
           </div>
           
@@ -86,7 +86,7 @@ const HowItWorks: React.FC = () => {
               </div>
               <h4 className="font-semibold text-gray-900 mb-2">Instant</h4>
               <p className="text-sm text-gray-600">
-                Bitcoin received immediately
+                M-Pesa services delivered immediately
               </p>
             </div>
             
