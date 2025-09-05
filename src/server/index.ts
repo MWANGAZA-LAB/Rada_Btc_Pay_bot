@@ -42,13 +42,33 @@ class Server {
   }
 
   private setupRoutes(): void {
-    // Health check endpoint
-    this.app.get('/health', (req, res) => {
+    // Root endpoint
+    this.app.get('/', (req, res) => {
       res.json({ 
-        status: 'healthy', 
+        message: 'Rada Bot API is running',
         timestamp: new Date().toISOString(),
         service: 'rada-bot'
       });
+    });
+
+    // Health check endpoint
+    this.app.get('/health', (req, res) => {
+      try {
+        res.json({ 
+          status: 'healthy', 
+          timestamp: new Date().toISOString(),
+          service: 'rada-bot',
+          uptime: process.uptime(),
+          environment: config.server.nodeEnv
+        });
+      } catch (error) {
+        logger.error('Health check error:', error);
+        res.status(500).json({ 
+          status: 'unhealthy', 
+          error: 'Health check failed',
+          timestamp: new Date().toISOString()
+        });
+      }
     });
 
     // Telegram webhook endpoint
@@ -328,17 +348,30 @@ class Server {
 
   public async start(): Promise<void> {
     try {
-      // Initialize services
-      await sessionManager.initialize();
+      // Initialize services (Redis is optional)
+      try {
+        await sessionManager.initialize();
+        logger.info('Session manager initialized successfully');
+      } catch (error) {
+        logger.warn('Session manager initialization failed (Redis may be unavailable):', error);
+        logger.warn('Continuing without Redis - sessions will not persist across restarts');
+      }
       
       // Start the server
-      this.server = this.app.listen(config.server.port, () => {
+      this.server = this.app.listen(config.server.port, '0.0.0.0', () => {
         logger.info(`Server running on port ${config.server.port}`);
         logger.info(`Environment: ${config.server.nodeEnv}`);
+        logger.info('Health check endpoint available at /health');
       });
 
-      // Start the bot
-      await this.bot.start();
+      // Start the bot (make it optional for health checks)
+      try {
+        await this.bot.start();
+        logger.info('Telegram bot started successfully');
+      } catch (error) {
+        logger.warn('Telegram bot failed to start:', error);
+        logger.warn('Server will continue running for health checks');
+      }
       
       logger.info('Rada Bot server started successfully');
     } catch (error) {
