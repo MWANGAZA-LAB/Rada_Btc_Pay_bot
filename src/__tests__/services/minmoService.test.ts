@@ -153,10 +153,12 @@ describe('MinmoService', () => {
       expect(rate).toBe(43500000);
     });
 
-    it('should handle exchange rate failure', async () => {
+    it('should return fallback rate when API fails', async () => {
       mockAxiosInstance.get.mockRejectedValue(new Error('Rate fetch failed'));
 
-      await expect(minmoService.getExchangeRate()).rejects.toThrow();
+      const rate = await minmoService.getExchangeRate();
+
+      expect(rate).toBe(43500000); // Fallback rate
     });
   });
 
