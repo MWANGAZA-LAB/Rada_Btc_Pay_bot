@@ -46,11 +46,12 @@ jobs:
       with:
         node-version: '18'
         cache: 'npm'
+        cache-dependency-path: web-ui/package-lock.json
 
     - name: Install web-ui dependencies
       run: |
         cd web-ui
-        npm install
+        npm ci
 
     - name: Run web-ui linter
       run: |
