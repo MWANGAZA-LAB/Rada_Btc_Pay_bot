@@ -7,6 +7,7 @@ async function main(): Promise<void> {
     logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
     logger.info(`Port: ${process.env.PORT || '3000'}`);
     logger.info(`Railway Environment: ${process.env.RAILWAY_ENVIRONMENT || 'not set'}`);
+    logger.info('QR Code Parser: Using dynamic import for ES Module compatibility');
     
     // Check for required environment variables
     const requiredEnvVars = ['TELEGRAM_BOT_TOKEN', 'MINMO_API_KEY', 'MINMO_WEBHOOK_SECRET'];
