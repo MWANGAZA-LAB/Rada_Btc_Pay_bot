@@ -45,7 +45,7 @@ const Footer: React.FC = () => {
                 </a>
               </li>
               <li>
-                <a href="https://t.me/RadaBot" className="text-gray-400 hover:text-white transition-colors">
+                <a href="https://t.me/Rada_Btc_Pay_bot" className="text-gray-400 hover:text-white transition-colors">
                   Telegram Bot
                 </a>
               </li>
@@ -79,7 +79,7 @@ const Footer: React.FC = () => {
               </li>
               <li>
                 <a 
-                  href="mailto:support@radabot.com" 
+                  href="mailto:radakenya254@gmail.com" 
                   className="text-gray-400 hover:text-white transition-colors flex items-center space-x-2"
                 >
                   <Mail className="w-4 h-4" />
