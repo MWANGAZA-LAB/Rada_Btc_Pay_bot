@@ -46,6 +46,7 @@ Seamlessly pay M-Pesa with Bitcoin Lightning payments.
 
 *Need help?* Contact support or use the /start command to return to the main menu.`,
 
+
   serviceInstructions: {
     airtime: `📱 *Buy Airtime with Bitcoin*
 
@@ -210,10 +211,9 @@ ${rate}
   lightningInvoice: (satsAmount: number, invoice: string) =>
     `⚡ *Pay ${formatSats(satsAmount)}*
 
-*Lightning Invoice:*
 \`${invoice}\`
 
-*Tap to copy invoice or use the buttons below to open your wallet.*`,
+*Tap a wallet below or copy the invoice.*`,
 
   paymentSuccess: (kshAmount: number, recipient: string, transactionId: string) =>
     `✅ *Payment Successful!*

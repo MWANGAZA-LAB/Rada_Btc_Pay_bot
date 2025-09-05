@@ -3,6 +3,7 @@ import { config } from '../config';
 import { sessionManager } from '../services/sessionManager';
 import { minmoService } from '../services/minmoService';
 import { rateService } from '../services/rateService';
+import { walletDetectionService } from '../services/walletDetectionService';
 import { validatePaymentData, formatPhoneNumber } from '../utils/validation';
 import { ServiceType, UserSession } from '../types';
 import { RadaContext } from './types';
@@ -132,9 +133,20 @@ export class RadaBot {
       await this.handleRefreshRate(ctx);
     });
 
-    // Lightning invoice callbacks
+    // Wallet-related callbacks
+    this.bot.callbackQuery(/^copy_invoice:(.+)$/, async (ctx: RadaContext) => {
+      const invoice = ctx.match?.[1];
+      if (invoice) {
+        await this.handleCopyInvoice(ctx, invoice);
+      }
+    });
+
+    // Lightning invoice callbacks (legacy - keeping for compatibility)
     this.bot.callbackQuery(/^copy_invoice_(.+)$/, async (ctx: RadaContext) => {
-      await this.handleCopyInvoice(ctx);
+      const invoice = ctx.match?.[1];
+      if (invoice) {
+        await this.handleCopyInvoice(ctx, invoice);
+      }
     });
   }
 
@@ -392,7 +404,7 @@ export class RadaBot {
         });
 
         const invoiceMessage = messages.lightningInvoice(satsAmount, invoiceResponse.invoice);
-        const keyboard = getLightningInvoiceKeyboard(invoiceResponse.invoice);
+        const keyboard = await walletDetectionService.generateWalletKeyboard(invoiceResponse.invoice);
 
         await ctx.reply(invoiceMessage, {
           parse_mode: 'Markdown',
@@ -456,28 +468,19 @@ export class RadaBot {
     }
   }
 
-  private async handleCopyInvoice(ctx: RadaContext): Promise<void> {
+  private async handleCopyInvoice(ctx: RadaContext, invoice: string): Promise<void> {
     try {
-      const session = ctx.session as UserSession;
-      
-      if (!session.lightningInvoice) {
-        await ctx.reply('No invoice available to copy.');
-        return;
-      }
-
-      await ctx.answerCallbackQuery('Invoice copied to clipboard!');
-      
-      // In a real implementation, you might want to send the invoice
-      // in a separate message for easier copying
-      await ctx.reply(
-        `📋 *Invoice copied!*\n\n\`${session.lightningInvoice}\`\n\n*Tap and hold to copy the invoice above.*`,
-        { parse_mode: 'Markdown' }
-      );
+      await ctx.answerCallbackQuery('Invoice copied!');
+      await ctx.reply(`📋 \`${invoice}\`\n\nPaste into any Lightning wallet.`, {
+        parse_mode: 'Markdown'
+      });
     } catch (error) {
       logger.error('Error in handleCopyInvoice:', error);
-      await ctx.answerCallbackQuery('Failed to copy invoice');
+      await ctx.answerCallbackQuery('Failed to copy');
     }
   }
+
+
 
   private async handleCancel(ctx: RadaContext): Promise<void> {
     try {
