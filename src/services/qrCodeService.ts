@@ -1,4 +1,3 @@
-import qrcodeParser from 'qrcode-parser';
 import logger from '../utils/logger';
 
 export interface QRCodeResult {
@@ -33,6 +32,7 @@ class QRCodeService {
    */
   async parseQRCodeFromFile(filePath: string): Promise<QRCodeResult> {
     try {
+      const { default: qrcodeParser } = await import('qrcode-parser');
       const result = await qrcodeParser(filePath);
       
       if (!result) {
@@ -57,6 +57,7 @@ class QRCodeService {
    */
   async parseQRCodeFromBuffer(buffer: Buffer): Promise<QRCodeResult> {
     try {
+      const { default: qrcodeParser } = await import('qrcode-parser');
       // Create a File from the buffer for qrcode-parser
       const file = new File([buffer], 'qr-code.png', { type: 'image/png' });
       const result = await qrcodeParser(file);

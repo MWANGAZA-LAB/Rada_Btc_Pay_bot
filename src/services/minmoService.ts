@@ -113,11 +113,18 @@ class MinmoService {
    */
   private async authenticate(): Promise<void> {
     try {
-      // For now, we'll use the API key as a password and a default email
-      // In production, you should have proper credentials
+      // Try using the API key directly as a Bearer token first
+      if (config.minmo.apiKey && config.minmo.apiKey.startsWith('sk-')) {
+        this.accessToken = config.minmo.apiKey;
+        this.tokenExpiry = new Date(Date.now() + (24 * 60 * 60 * 1000)); // 24 hours
+        logger.info('Using API key as Bearer token for Minmo API');
+        return;
+      }
+
+      // Fallback to login method if API key is not a Bearer token
       const loginRequest: LoginRequest = {
         email: process.env.MINMO_EMAIL || 'bot@minmo.com',
-        password: config.minmo.apiKey, // Using API key as password for now
+        password: config.minmo.apiKey,
       };
 
       const response = await this.authApi.post<LoginResponse>('/api/v1/auth/login', loginRequest);
@@ -125,7 +132,7 @@ class MinmoService {
       this.accessToken = response.data.access_token;
       this.tokenExpiry = new Date(Date.now() + (response.data.expires_in * 1000));
       
-      logger.info('Successfully authenticated with Minmo API');
+      logger.info('Successfully authenticated with Minmo API via login');
     } catch (error: unknown) {
       logger.error('Failed to authenticate with Minmo API:', error);
       throw new Error('Authentication failed');
