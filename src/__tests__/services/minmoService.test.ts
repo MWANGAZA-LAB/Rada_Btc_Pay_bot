@@ -69,7 +69,7 @@ describe('MinmoService', () => {
       const result = await minmoService.generateLightningInvoice(invoiceRequest);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Invoice generation failed');
+      expect(result.error).toBe('Lightning invoice generation failed - API endpoints not available');
     });
   });
 
@@ -110,7 +110,7 @@ describe('MinmoService', () => {
       const result = await minmoService.executeMpesaPayout(payoutRequest);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('M-Pesa payout failed');
+      expect(result.error).toBe('M-Pesa payout failed - API endpoints not available');
     });
   });
 
