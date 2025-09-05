@@ -8,15 +8,15 @@ const Hero: React.FC = () => {
         <div className="text-center">
           <div className="animate-fade-in">
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6">
-              Seamless Bitcoin Payments
+              Pay with Bitcoin
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-bitcoin-500">
-                via M-Pesa
+                Get M-Pesa Services
               </span>
             </h1>
             
             <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
-              Convert your M-Pesa payments to Bitcoin instantly. Buy airtime, pay bills, 
-              and purchase goods while earning Bitcoin rewards.
+              Use your Bitcoin Lightning wallet to buy airtime, pay bills, send money, 
+              and make M-Pesa payments instantly. No M-Pesa balance needed.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
@@ -44,9 +44,9 @@ const Hero: React.FC = () => {
               <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mb-4">
                 <Zap className="w-6 h-6 text-primary-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Instant Conversion</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Lightning Fast</h3>
               <p className="text-gray-600 text-center">
-                Convert M-Pesa payments to Bitcoin in seconds
+                Pay with Bitcoin Lightning and get M-Pesa services instantly
               </p>
             </div>
             
@@ -56,7 +56,7 @@ const Hero: React.FC = () => {
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Non-Custodial</h3>
               <p className="text-gray-600 text-center">
-                You control your Bitcoin keys, we never hold your funds
+                Pay directly from your Bitcoin wallet, we never hold your funds
               </p>
             </div>
             
@@ -66,7 +66,7 @@ const Hero: React.FC = () => {
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Kenya First</h3>
               <p className="text-gray-600 text-center">
-                Built specifically for Kenyan M-Pesa users
+                Bitcoin payments for all Kenyan M-Pesa services
               </p>
             </div>
           </div>

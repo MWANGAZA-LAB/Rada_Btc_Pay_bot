@@ -17,8 +17,8 @@ Seamlessly pay M-Pesa with Bitcoin Lightning payments.
 *How it works:*
 1️⃣ Choose a service
 2️⃣ Enter payment details
-3️⃣ Pay Lightning invoice
-4️⃣ M-Pesa payment sent instantly
+3️⃣ Copy Lightning invoice to your wallet
+4️⃣ M-Pesa service delivered instantly
 
 *Ready to start?* Choose a service below! 👇`,
 
@@ -36,13 +36,13 @@ Seamlessly pay M-Pesa with Bitcoin Lightning payments.
 1. Select a service from the main menu
 2. Follow the prompts to enter details
 3. Confirm your payment with current rate
-4. Pay Lightning invoice from your wallet
-5. M-Pesa payment sent instantly
+4. Copy Lightning invoice to your wallet
+5. M-Pesa service delivered instantly
 
-*Supported Wallets:*
-• BlueWallet, Phoenix, Muun, Zeus
-• Any Lightning-compatible wallet
-• Deep links automatically open your wallet
+*How to Pay:*
+• Copy the Lightning invoice to any Bitcoin wallet
+• Paste into your Lightning-compatible wallet
+• Complete payment and M-Pesa service is delivered instantly
 
 *Need help?* Contact support or use the /start command to return to the main menu.`,
 

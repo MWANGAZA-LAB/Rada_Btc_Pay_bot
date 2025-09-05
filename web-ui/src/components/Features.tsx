@@ -14,37 +14,37 @@ const Features: React.FC = () => {
     {
       icon: Smartphone,
       title: 'Buy Airtime',
-      description: 'Top up your phone with Bitcoin rewards',
+      description: 'Pay with Bitcoin to top up any phone number',
       color: 'bg-blue-100 text-blue-600',
     },
     {
       icon: Building2,
       title: 'Pay Bills',
-      description: 'Pay utility bills and earn Bitcoin',
+      description: 'Pay utility bills using Bitcoin Lightning',
       color: 'bg-green-100 text-green-600',
     },
     {
       icon: ShoppingCart,
       title: 'Buy Goods',
-      description: 'Purchase goods and receive Bitcoin',
+      description: 'Purchase goods and services with Bitcoin',
       color: 'bg-purple-100 text-purple-600',
     },
     {
       icon: Send,
       title: 'Send Money',
-      description: 'Send money and get Bitcoin rewards',
+      description: 'Send M-Pesa payments using Bitcoin',
       color: 'bg-orange-100 text-orange-600',
     },
     {
       icon: Wallet,
       title: 'Lipa na Pochi',
-      description: 'Use Pochi and earn Bitcoin',
+      description: 'Use Bitcoin to make Pochi payments',
       color: 'bg-pink-100 text-pink-600',
     },
     {
       icon: QrCode,
       title: 'Scan QR Codes',
-      description: 'Scan QR codes for Bitcoin payments',
+      description: 'Pay Bitcoin for QR code transactions',
       color: 'bg-indigo-100 text-indigo-600',
     },
   ]
@@ -54,10 +54,10 @@ const Features: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Everything You Need
+            Pay with Bitcoin, Get M-Pesa Services
           </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Use Rada Bot for all your M-Pesa transactions and earn Bitcoin with every payment
+            Use your Bitcoin Lightning wallet to access all M-Pesa services without needing M-Pesa balance
           </p>
         </div>
         
