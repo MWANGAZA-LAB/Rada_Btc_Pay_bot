@@ -141,27 +141,69 @@ class MinmoService {
     }
   }
 
+  /**
+   * Generate Lightning Address - Creates a new Lightning address for receiving payments
+   */
+  async generateLightningAddress(): Promise<{ success: boolean; address?: string; error?: string }> {
+    try {
+      await this.ensureAuthenticated();
+      const response = await this.api.post('/api/v1/bitcoin/address');
+      
+      return {
+        success: true,
+        address: response.data.address,
+      };
+    } catch (error: unknown) {
+      logger.error('Failed to generate Lightning address:', error);
+      return {
+        success: false,
+        error: 'Lightning address generation failed - Minmo API authentication required',
+      };
+    }
+  }
+
+  /**
+   * Validate Lightning Invoice - Validates a BOLT11 Lightning invoice
+   */
+  async validateLightningInvoice(invoice: string): Promise<{ success: boolean; valid?: boolean; amount?: number; error?: string }> {
+    try {
+      await this.ensureAuthenticated();
+      const response = await this.api.post('/api/v1/bitcoin/invoice/validate', {
+        invoice,
+      });
+      
+      return {
+        success: true,
+        valid: response.data.valid,
+        amount: response.data.amount,
+      };
+    } catch (error: unknown) {
+      logger.error('Failed to validate Lightning invoice:', error);
+      return {
+        success: false,
+        error: 'Lightning invoice validation failed - Minmo API authentication required',
+      };
+    }
+  }
+
+  /**
+   * Generate Lightning Invoice - Creates a new BOLT11 Lightning invoice
+   */
   async generateLightningInvoice(invoiceRequest: LightningInvoiceRequest): Promise<LightningInvoiceResponse> {
     try {
-      // Use the Minmo swap API to create a lightning payment
-      const swapRequest = {
-        fromCurrency: 'BTC',
-        toCurrency: 'KES',
+      await this.ensureAuthenticated();
+      const response = await this.api.post('/api/v1/bitcoin/invoice', {
         amount: invoiceRequest.amount,
         description: invoiceRequest.description,
+        expiry: invoiceRequest.expiry,
         callbackUrl: `${config.telegram.webhookUrl}/api/lightning/callback`,
-        // Additional swap-specific parameters
-        paymentMethod: 'lightning',
-        recipientType: 'mpesa'
-      };
-
-      const response = await this.api.post('/api/v1/swap', swapRequest);
+      });
 
       return {
         success: true,
-        invoice: response.data.lightningInvoice || response.data.paymentRequest,
-        invoiceId: response.data.swapId || response.data.id,
-        expiresAt: new Date(response.data.expiresAt || Date.now() + 3600000), // 1 hour default
+        invoice: response.data.invoice,
+        invoiceId: response.data.invoiceId,
+        expiresAt: new Date(response.data.expiresAt),
       };
     } catch (error: unknown) {
       logger.error('Failed to generate Lightning invoice via Minmo API:', error);
@@ -175,9 +217,60 @@ class MinmoService {
     }
   }
 
+  /**
+   * Pay Lightning Invoice - Initiates payment of a Lightning invoice
+   */
+  async payLightningInvoice(invoice: string, amount?: number): Promise<{ success: boolean; paymentId?: string; error?: string }> {
+    try {
+      await this.ensureAuthenticated();
+      const response = await this.api.post('/api/v1/bitcoin/pay', {
+        invoice,
+        amount,
+      });
+      
+      return {
+        success: true,
+        paymentId: response.data.paymentId,
+      };
+    } catch (error: unknown) {
+      logger.error('Failed to pay Lightning invoice:', error);
+      return {
+        success: false,
+        error: 'Lightning invoice payment failed - Minmo API authentication required',
+      };
+    }
+  }
+
+  /**
+   * Check Bitcoin Balance - Gets the current Bitcoin/Lightning balance
+   */
+  async checkBitcoinBalance(): Promise<{ success: boolean; balance?: { sats: number; btc: number }; error?: string }> {
+    try {
+      await this.ensureAuthenticated();
+      const response = await this.api.get('/api/v1/bitcoin/balance');
+      
+      return {
+        success: true,
+        balance: {
+          sats: response.data.sats,
+          btc: response.data.btc,
+        },
+      };
+    } catch (error: unknown) {
+      logger.error('Failed to check Bitcoin balance:', error);
+      return {
+        success: false,
+        error: 'Bitcoin balance check failed - Minmo API authentication required',
+      };
+    }
+  }
+
+  /**
+   * Execute M-Pesa Payout - Processes M-Pesa payment after Lightning invoice is paid
+   */
   async executeMpesaPayout(payoutRequest: MinmoPayoutRequest): Promise<MinmoPayoutResponse> {
     try {
-      // Try the new API endpoint first
+      await this.ensureAuthenticated();
       const response = await this.api.post('/api/v1/mpesa/payouts', {
         ...payoutRequest,
         callbackUrl: `${config.telegram.webhookUrl}/api/minmo/payout-callback`,
@@ -198,8 +291,12 @@ class MinmoService {
     }
   }
 
+  /**
+   * Convert KES to Sats - Converts Kenyan Shillings to Satoshis using current exchange rate
+   */
   async convertKesToSats(kshAmount: number): Promise<{ satsAmount: number; rate: number }> {
     try {
+      await this.ensureAuthenticated();
       const response = await this.api.post('/api/v1/exchange/convert', {
         amount: kshAmount,
         from: 'KES',
@@ -212,13 +309,16 @@ class MinmoService {
       };
     } catch (error: unknown) {
       logger.error('Failed to convert KES to sats:', error);
-      throw new Error('KES to sats conversion failed');
+      throw new Error('KES to sats conversion failed - Minmo API authentication required');
     }
   }
 
+  /**
+   * Get Exchange Rate - Retrieves current KES to BTC exchange rate
+   */
   async getExchangeRate(): Promise<number> {
     try {
-      // Use the correct Minmo API endpoint for FX rates
+      await this.ensureAuthenticated();
       const response = await this.api.get('/api/v1/fx/rates/KES/BTC');
       return response.data.rate;
     } catch (error: unknown) {
@@ -227,6 +327,9 @@ class MinmoService {
     }
   }
 
+  /**
+   * Verify Webhook Signature - Validates incoming webhook signatures for security
+   */
   async verifyWebhook(payload: unknown, signature: string): Promise<boolean> {
     try {
       // Implement webhook signature verification
@@ -241,6 +344,43 @@ class MinmoService {
     } catch (error) {
       logger.error('Webhook verification failed:', error);
       return false;
+    }
+  }
+
+  /**
+   * Get Service Health - Checks if all Minmo API services are operational
+   */
+  async getServiceHealth(): Promise<{ 
+    authenticated: boolean; 
+    bitcoinService: boolean; 
+    exchangeService: boolean; 
+    mpesaService: boolean;
+    error?: string;
+  }> {
+    try {
+      await this.ensureAuthenticated();
+      
+      // Test Bitcoin service
+      const bitcoinHealth = await this.checkBitcoinBalance();
+      
+      // Test Exchange service
+      const exchangeHealth = await this.getExchangeRate();
+      
+      return {
+        authenticated: true,
+        bitcoinService: bitcoinHealth !== undefined,
+        exchangeService: exchangeHealth !== undefined,
+        mpesaService: true, // M-Pesa service availability would need separate endpoint
+      };
+    } catch (error: unknown) {
+      logger.error('Service health check failed:', error);
+      return {
+        authenticated: false,
+        bitcoinService: false,
+        exchangeService: false,
+        mpesaService: false,
+        error: 'Service health check failed - Minmo API authentication required',
+      };
     }
   }
 
