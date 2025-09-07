@@ -113,10 +113,18 @@ class MinmoService {
    */
   private async authenticate(): Promise<void> {
     try {
-      // Use proper login with email and password
+      // Use API key directly as Bearer token
+      if (config.minmo.apiKey && config.minmo.apiKey.startsWith('sk-')) {
+        this.accessToken = config.minmo.apiKey;
+        this.tokenExpiry = new Date(Date.now() + (24 * 60 * 60 * 1000)); // 24 hours
+        logger.info('Using API key as Bearer token for Minmo API authentication');
+        return;
+      }
+
+      // Fallback to email/password login if API key is not available
       const loginRequest: LoginRequest = {
         email: process.env.MINMO_EMAIL || 'bot@minmo.com',
-        password: process.env.MINMO_PASSWORD || config.minmo.apiKey, // Use password or fallback to API key
+        password: process.env.MINMO_PASSWORD || config.minmo.apiKey,
       };
 
       logger.info('Attempting to authenticate with Minmo API using email/password');

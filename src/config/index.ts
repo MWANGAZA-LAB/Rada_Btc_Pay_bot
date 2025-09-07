@@ -49,6 +49,12 @@ const requiredEnvVars = [
   'MINMO_WEBHOOK_SECRET',
 ];
 
+// Optional environment variables (only required if not using API key authentication)
+const optionalEnvVars = [
+  'MINMO_EMAIL',
+  'MINMO_PASSWORD',
+];
+
 // Only validate in production or when explicitly required
 // Skip validation for Railway deployment to allow health checks to work
 const isRailway = process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID || process.env.RAILWAY_SERVICE_ID;
