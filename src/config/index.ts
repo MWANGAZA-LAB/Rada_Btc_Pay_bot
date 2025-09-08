@@ -50,10 +50,10 @@ const requiredEnvVars = [
 ];
 
 // Optional environment variables (only required if not using API key authentication)
-const optionalEnvVars = [
-  'MINMO_EMAIL',
-  'MINMO_PASSWORD',
-];
+// const optionalEnvVars = [
+//   'MINMO_EMAIL',
+//   'MINMO_PASSWORD',
+// ];
 
 // Only validate in production or when explicitly required
 // Skip validation for Railway deployment to allow health checks to work

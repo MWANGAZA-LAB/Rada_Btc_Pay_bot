@@ -34,6 +34,7 @@ class MinmoService {
       baseURL: config.minmo.apiUrl,
       headers: {
         'Content-Type': 'application/json',
+        'X-API-Key': config.minmo.apiKey, // Use API key directly in headers
       },
       timeout: 30000,
     });
@@ -43,6 +44,7 @@ class MinmoService {
       baseURL: config.minmo.apiUrl,
       headers: {
         'Content-Type': 'application/json',
+        'X-API-Key': config.minmo.apiKey, // Use API key for auth requests too
       },
       timeout: 30000,
     });
@@ -144,6 +146,12 @@ class MinmoService {
    * Ensure we have a valid authentication token
    */
   private async ensureAuthenticated(): Promise<void> {
+    // If using API key directly, no need for JWT authentication
+    if (config.minmo.apiKey && config.minmo.apiKey.startsWith('sk-')) {
+      return; // API key is already in headers
+    }
+    
+    // Only authenticate with JWT if not using API key
     if (!this.accessToken || !this.tokenExpiry || new Date() >= this.tokenExpiry) {
       await this.authenticate();
     }
@@ -328,10 +336,22 @@ class MinmoService {
     try {
       await this.ensureAuthenticated();
       const response = await this.api.get('/api/v1/fx/rates/KES/BTC');
+      logger.info('Successfully fetched exchange rate from Minmo API:', response.data.rate);
       return response.data.rate;
     } catch (error: unknown) {
       logger.error('Failed to get exchange rate from Minmo API:', error);
-      throw new Error('Exchange rate service unavailable - Minmo API authentication required');
+      
+      // Log the specific error for debugging
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { status?: number; data?: unknown } };
+        logger.error('API Error Details:', {
+          status: axiosError.response?.status,
+          data: axiosError.response?.data,
+        });
+      }
+      
+      // Throw error to let the calling service handle fallback
+      throw new Error('Exchange rate service unavailable - using fallback rate');
     }
   }
 
