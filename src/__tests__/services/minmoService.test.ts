@@ -69,7 +69,7 @@ describe('MinmoService', () => {
       const result = await minmoService.generateLightningInvoice(invoiceRequest);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Lightning invoice generation failed - API endpoints not available');
+      expect(result.error).toBe('Lightning invoice generation failed - Minmo API authentication required');
     });
   });
 
@@ -110,7 +110,7 @@ describe('MinmoService', () => {
       const result = await minmoService.executeMpesaPayout(payoutRequest);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('M-Pesa payout failed - API endpoints not available');
+      expect(result.error).toBe('M-Pesa payout failed - Minmo API authentication required');
     });
   });
 
@@ -146,6 +146,14 @@ describe('MinmoService', () => {
         },
       };
 
+      // Mock authentication success
+      mockAxiosInstance.post.mockResolvedValue({
+        data: {
+          access_token: 'mock-token',
+          expires_in: 3600,
+        },
+      });
+
       mockAxiosInstance.get.mockResolvedValue(mockResponse);
 
       const rate = await minmoService.getExchangeRate();
@@ -153,12 +161,10 @@ describe('MinmoService', () => {
       expect(rate).toBe(43500000);
     });
 
-    it('should return fallback rate when API fails', async () => {
+    it('should throw error when API fails', async () => {
       mockAxiosInstance.get.mockRejectedValue(new Error('Rate fetch failed'));
 
-      const rate = await minmoService.getExchangeRate();
-
-      expect(rate).toBe(43500000); // Fallback rate
+      await expect(minmoService.getExchangeRate()).rejects.toThrow('Exchange rate service unavailable - using fallback rate');
     });
   });
 
